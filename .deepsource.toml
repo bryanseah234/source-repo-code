@@ -39,10 +39,6 @@ name = "swift"
 enabled = true
 
 [[analyzers]]
-name = "cpp" # C & C++
-enabled = true
-
-[[analyzers]]
 name = "scala"
 enabled = true
 
