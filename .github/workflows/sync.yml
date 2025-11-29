@@ -1,5 +1,5 @@
 # .github/workflows/sync.yml in your source repo
-name: Sync Dependabot Config
+name: Sync Dependabot Config Dynamically
 on:
   push:
     branches:
@@ -11,11 +11,40 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4 # Action to check out the source repo
+        with:
+          fetch-depth: 0 # Needed for some git operations
+
+      # Add this step to ensure jq is installed for JSON processing
+      - name: Install jq
+        run: sudo apt-get install jq -y
+
+      - name: Generate Dynamic Sync List
+        # This step MUST happen before the 'Run GitHub File Sync' step
+        run: |
+          # Use GitHub CLI to list all user repositories (public and private)
+          # jq filters the JSON output for just the repository names
+          REPOS=$(gh repo list --limit 9999 --json name | jq -r '.[].name')
+          
+          # Start creating the new sync.yml file dynamically
+          echo "# Dynamically generated list of repositories" > .github/sync.yml
+          
+          for REPO_NAME in $REPOS; do
+            # Add each repo to the sync.yml file
+            echo "${{ github.repository_owner }}/$REPO_NAME:" >> .github/sync.yml
+            echo "  - source: .github/dependabot.yml" >> .github/sync.yml
+            echo "    dest: .github/dependabot.yml" >> .github/sync.yml
+          done
+
+          # Verify the generated file (optional)
+          cat .github/sync.yml
+        env:
+          # The PAT is required here for 'gh repo list' to see all your repos
+          GH_PAT: ${{ secrets.GH_PAT }} 
+
       - name: Run GitHub File Sync
-        # This is a pre-built action from the marketplace that does the hard work
+        # This step NOW uses the sync.yml file generated in the previous step
         uses: BetaHuhn/repo-file-sync-action@v1 
         with:
-          # The PAT secret you created earlier
           GH_PAT: ${{ secrets.GH_PAT }} 
-          # Points to the sync config file created in step 2
+          # The action now reads the auto-generated file
           CONFIG_PATH: .github/sync.yml
