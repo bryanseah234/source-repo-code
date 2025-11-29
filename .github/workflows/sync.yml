@@ -1,9 +1,11 @@
-# .github/workflows/force-sync.yml in your source repo
+# .github/workflows/sync.yml
 name: Force Sync Config Files to Main Branch
 on:
   push:
     branches:
       - main
+  # Optional: Allows manual running of the workflow from the GitHub UI
+  workflow_dispatch: 
 
 jobs:
   force-sync:
@@ -12,9 +14,12 @@ jobs:
       - name: Checkout Source Repository
         uses: actions/checkout@v4
 
-      - name: Install jq
-        run: sudo apt-get install jq -y
-        
+      - name: Install jq and GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install jq -y
+          # GitHub CLI 'gh' is already installed on GitHub Hosted Runners
+
       - name: Force Sync Files to All Repos
         run: |
           # Configure git for the commit signature
@@ -24,6 +29,7 @@ jobs:
           # Use GitHub CLI to list all user repositories
           REPOS=$(gh repo list --limit 9999 --json name | jq -r '.[].name')
           OWNER=${{ github.repository_owner }}
+          SOURCE_REPO_NAME=${{ github.event.repository.name }}
 
           for REPO_NAME in $REPOS; do
             TARGET_DIR="../$REPO_NAME"
@@ -33,19 +39,24 @@ jobs:
             gh repo clone "$OWNER/$REPO_NAME" "$TARGET_DIR"
             cd "$TARGET_DIR" || continue
 
-            # Copy the configuration files from the source repo to the target repo's root
-            cp -f ../${{ github.event.repository.name }}/.github/dependabot.yml .github/dependabot.yml
-            cp -f ../${{ github.event.repository.name }}/.deepsource.toml .deepsource.toml
-            cp -f ../${{ github.event.repository.name }}/.sourcery.yaml .sourcery.yaml
+            # Ensure .github/workflows directory exists in target repo
+            mkdir -p .github/workflows
 
+            # Copy the configuration files from the source repo to the target repo
+            # -f flag ensures files are overwritten if they exist
+            cp -f ../$SOURCE_REPO_NAME/.github/dependabot.yml .github/dependabot.yml
+            cp -f ../$SOURCE_REPO_NAME/.deepsource.toml .deepsource.toml
+            cp -f ../$SOURCE_REPO_NAME/.sourcery.yaml .sourcery.yaml
+            cp -f ../$SOURCE_REPO_NAME/.github/workflows/trufflehog.yml .github/workflows/trufflehog.yml
 
-            # Stage and commit changes
-            git add .github/dependabot.yml .deepsource.toml .sourcery.yaml
+            # Stage all changes
+            git add .github/dependabot.yml .deepsource.toml .sourcery.yaml .github/workflows/trufflehog.yml
             
             # Check if there are changes to commit
             if git status | grep -q "Changes to be committed"; then
-              git commit -m "feat(config): Standardize CI config via sync workflow"
+              git commit -m "feat(config): Standardize CI/CD configurations via sync workflow"
               # Push directly to the default branch (e.g., main or master)
+              # The 'HEAD' reference points to the current branch, which is the default branch
               git push origin HEAD
               echo "Pushed changes to $REPO_NAME"
             else
@@ -56,4 +67,5 @@ jobs:
             cd -
           done
         env:
+          # The PAT is essential for 'gh repo list' and pushing to other repos
           GH_PAT: ${{ secrets.GH_PAT }}
