@@ -1,50 +1,59 @@
-# .github/workflows/sync.yml in your source repo
-name: Sync Dependabot Config Dynamically
+# .github/workflows/force-sync.yml in your source repo
+name: Force Sync Config Files to Main Branch
 on:
   push:
     branches:
-      - main # Trigger the sync when main branch is pushed to
+      - main
 
 jobs:
-  sync:
+  force-sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4 # Action to check out the source repo
-        with:
-          fetch-depth: 0 # Needed for some git operations
+      - name: Checkout Source Repository
+        uses: actions/checkout@v4
 
-      # Add this step to ensure jq is installed for JSON processing
       - name: Install jq
         run: sudo apt-get install jq -y
-
-      - name: Generate Dynamic Sync List
-        # This step MUST happen before the 'Run GitHub File Sync' step
+        
+      - name: Force Sync Files to All Repos
         run: |
-          # Use GitHub CLI to list all user repositories (public and private)
-          # jq filters the JSON output for just the repository names
+          # Configure git for the commit signature
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions Sync"
+
+          # Use GitHub CLI to list all user repositories
           REPOS=$(gh repo list --limit 9999 --json name | jq -r '.[].name')
-          
-          # Start creating the new sync.yml file dynamically
-          echo "# Dynamically generated list of repositories" > .github/sync.yml
-          
+          OWNER=${{ github.repository_owner }}
+
           for REPO_NAME in $REPOS; do
-            # Add each repo to the sync.yml file
-            echo "${{ github.repository_owner }}/$REPO_NAME:" >> .github/sync.yml
-            echo "  - source: .github/dependabot.yml" >> .github/sync.yml
-            echo "    dest: .github/dependabot.yml" >> .github/sync.yml
+            TARGET_DIR="../$REPO_NAME"
+            echo "Processing $REPO_NAME..."
+
+            # Clone the target repository
+            gh repo clone "$OWNER/$REPO_NAME" "$TARGET_DIR"
+            cd "$TARGET_DIR" || continue
+
+            # Copy the configuration files from the source repo to the target repo's root
+            cp -f ../${{ github.event.repository.name }}/.github/dependabot.yml .github/dependabot.yml
+            cp -f ../${{ github.event.repository.name }}/.deepsource.toml .deepsource.toml
+            cp -f ../${{ github.event.repository.name }}/.sourcery.yaml .sourcery.yaml
+
+
+            # Stage and commit changes
+            git add .github/dependabot.yml .deepsource.toml .sourcery.yaml
+            
+            # Check if there are changes to commit
+            if git status | grep -q "Changes to be committed"; then
+              git commit -m "feat(config): Standardize CI config via sync workflow"
+              # Push directly to the default branch (e.g., main or master)
+              git push origin HEAD
+              echo "Pushed changes to $REPO_NAME"
+            else
+              echo "No changes needed in $REPO_NAME, skipping push."
+            fi
+
+            # Go back to the runner's home directory for the next loop iteration
+            cd -
           done
-
-          # Verify the generated file (optional)
-          cat .github/sync.yml
         env:
-          # The PAT is required here for 'gh repo list' to see all your repos
-          GH_PAT: ${{ secrets.GH_PAT }} 
-
-      - name: Run GitHub File Sync
-        # This step NOW uses the sync.yml file generated in the previous step
-        uses: BetaHuhn/repo-file-sync-action@v1 
-        with:
-          GH_PAT: ${{ secrets.GH_PAT }} 
-          # The action now reads the auto-generated file
-          CONFIG_PATH: .github/sync.yml
+          GH_PAT: ${{ secrets.GH_PAT }}
