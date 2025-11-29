@@ -1,0 +1,7 @@
+# .github/dependabot.yml in your source repo
+version: 2
+updates:
+  - package-ecosystem: "npm" 
+    directory: "/"
+    schedule:
+      interval: "daily"
