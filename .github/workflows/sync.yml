@@ -1,14 +1,65 @@
-# .github/workflows/sync.yml
+# . github/workflows/sync.yml
 name: Force Sync Config Files to Main Branch
 on:
   push:
     branches:
       - main
   workflow_dispatch: 
+  schedule:
+    - cron: '0 0 * * *'  # Daily at midnight UTC to catch new repos
 
 jobs:
+  configure-repo-settings:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure All Repository Settings
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          script: |
+            const owner = 'bryanseah234';
+            
+            // Get all repositories for the user
+            const repos = await github.paginate(github.rest.repos.listForAuthenticatedUser, {
+              per_page: 100,
+              affiliation: 'owner'
+            });
+            
+            console.log(`Found ${repos.length} repositories to configure`);
+            
+            for (const repo of repos) {
+              // Skip archived repos
+              if (repo. archived) {
+                console.log(`Skipping archived repo: ${repo.name}`);
+                continue;
+              }
+              
+              try {
+                console.log(`Configuring settings for: ${repo. name}`);
+                
+                // Update repository settings
+                await github.rest.repos.update({
+                  owner: owner,
+                  repo: repo.name,
+                  description: "Give me 1 ⭐ if it's cool.",
+                  homepage: "https://www.hong-yi.me",
+                  has_issues: true,
+                  has_wiki: true,
+                  has_projects: true,
+                  has_discussions: true
+                });
+                
+                console.log(`✅ Successfully configured settings for: ${repo.name}`);
+              } catch (error) {
+                console.log(`❌ Failed to configure ${repo.name}: ${error.message}`);
+              }
+            }
+            
+            console.log('Repository settings configuration complete! ');
+
   force-sync:
     runs-on: ubuntu-latest
+    needs: configure-repo-settings
     steps:
       - name: Checkout Source Repository
         uses: actions/checkout@v4
@@ -20,12 +71,12 @@ jobs:
 
       - name: Force Sync Files to All Repos
         run: |
-          git config --global user.email "actions@github.com"
+          git config --global user. email "actions@github.com"
           git config --global user.name "GitHub Actions Sync"
 
           REPOS=$(gh repo list --limit 9999 --json name | jq -r '.[].name')
           OWNER=${{ github.repository_owner }}
-          SOURCE_REPO_NAME=${{ github.event.repository.name }}
+          SOURCE_REPO_NAME=${{ github. event.repository.name }}
 
           for REPO_NAME in $REPOS; do
             TARGET_DIR="../$REPO_NAME"
@@ -34,21 +85,19 @@ jobs:
             gh repo clone "$OWNER/$REPO_NAME" "$TARGET_DIR"
             cd "$TARGET_DIR" || continue
 
-            mkdir -p .github/workflows
-            mkdir -p .github # Ensure the .github directory exists for dependabot.yml
+            mkdir -p . github/workflows
+            mkdir -p .github
 
-            # Copy the configuration files from the source repo to the target repo
-            cp -f ../$SOURCE_REPO_NAME/.github/dependabot.yml .github/dependabot.yml
+            cp -f .. /$SOURCE_REPO_NAME/.github/dependabot.yml .github/dependabot.yml
             cp -f ../$SOURCE_REPO_NAME/.deepsource.toml .deepsource.toml
             cp -f ../$SOURCE_REPO_NAME/.sourcery.yml .sourcery.yml
-            cp -f ../$SOURCE_REPO_NAME/.github/workflows/trufflehog.yml .github/workflows/trufflehog.yml
+            cp -f .. /$SOURCE_REPO_NAME/. github/workflows/trufflehog. yml .github/workflows/trufflehog.yml
             cp -f ../$SOURCE_REPO_NAME/.github/labels.yml .github/labels.yml
             cp -f ../$SOURCE_REPO_NAME/.github/workflows/labeler.yml .github/workflows/labeler.yml
-            cp -f ../$SOURCE_REPO_NAME/.github/greetings.yml .github/greetings.yml
-            cp -f ../$SOURCE_REPO_NAME/.github/workflows/greetings.yml .github/workflows/greetings.yml
+            cp -f .. /$SOURCE_REPO_NAME/.github/greetings.yml .github/greetings.yml
+            cp -f ../$SOURCE_REPO_NAME/.github/workflows/greetings. yml . github/workflows/greetings.yml
 
-            # Stage all changes
-            git add .github/dependabot.yml .deepsource.toml .sourcery.yml .github/workflows/trufflehog.yml .github/labels.yml .github/workflows/labeler.yml .github/greetings.yml .github/workflows/greetings.yml
+            git add .github/dependabot. yml .deepsource.toml .sourcery.yml .github/workflows/trufflehog.yml .github/labels. yml .github/workflows/labeler.yml .github/greetings.yml .github/workflows/greetings.yml
             
             if git status | grep -q "Changes to be committed"; then
               git commit -m "feat(config): Standardize CI/CD configurations via sync workflow"
