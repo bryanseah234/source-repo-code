@@ -1,0 +1,29 @@
+# .github/workflows/trufflehog.yml (Place this in your source repo)
+name: TruffleHog Secret Scan
+
+on:
+  push:
+    branches: [ "main" ] # Runs on pushes to the main branch
+  pull_request:
+    branches: [ "main" ] # Runs on pull requests targeting the main branch
+
+jobs:
+  trufflehog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # fetch-depth 0 ensures the entire git history is scanned
+      
+      - name: TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified # Only reports secrets that TruffleHog verifies as live
+          
+      - name: Check for secrets (Fails the CI run if secrets are found)
+        if: failure()
+        run: echo "TruffleHog detected secrets. Please review and remove them." && exit 1
