@@ -42,9 +42,13 @@ jobs:
             cp -f ../$SOURCE_REPO_NAME/.deepsource.toml .deepsource.toml
             cp -f ../$SOURCE_REPO_NAME/.sourcery.yml .sourcery.yml
             cp -f ../$SOURCE_REPO_NAME/.github/workflows/trufflehog.yml .github/workflows/trufflehog.yml
+            cp -f ../$SOURCE_REPO_NAME/.github/labels.yml .github/labels.yml
+            cp -f ../$SOURCE_REPO_NAME/.github/workflows/labeler.yml .github/workflows/labeler.yml
+            cp -f ../$SOURCE_REPO_NAME/.github/greetings.yml .github/greetings.yml
+            cp -f ../$SOURCE_REPO_NAME/.github/workflows/greetings.yml .github/workflows/greetings.yml
 
-            # Stage all changes (Note the correct root-level path for .sourcery.yml)
-            git add .github/dependabot.yml .deepsource.toml .sourcery.yml .github/workflows/trufflehog.yml
+            # Stage all changes
+            git add .github/dependabot.yml .deepsource.toml .sourcery.yml .github/workflows/trufflehog.yml .github/labels.yml .github/workflows/labeler.yml .github/greetings.yml .github/workflows/greetings.yml
             
             if git status | grep -q "Changes to be committed"; then
               git commit -m "feat(config): Standardize CI/CD configurations via sync workflow"
