@@ -1,0 +1,8 @@
+# .github/sync.yml in your source repo
+user/repo1:
+  - source: .github/dependabot.yml
+    dest: .github/dependabot.yml
+user/repo2:
+  - source: .github/dependabot.yml
+    dest: .github/dependabot.yml
+# Add all other repos here
