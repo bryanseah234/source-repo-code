@@ -1,0 +1,21 @@
+# .github/workflows/sync.yml in your source repo
+name: Sync Dependabot Config
+on:
+  push:
+    branches:
+      - main # Trigger the sync when main branch is pushed to
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4 # Action to check out the source repo
+      - name: Run GitHub File Sync
+        # This is a pre-built action from the marketplace that does the hard work
+        uses: BetaHuhn/repo-file-sync-action@v1 
+        with:
+          # The PAT secret you created earlier
+          GH_PAT: ${{ secrets.GH_PAT }} 
+          # Points to the sync config file created in step 2
+          CONFIG_PATH: .github/sync.yml
