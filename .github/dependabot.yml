@@ -1,4 +1,4 @@
-version: 5
+version: 2
 updates:
   # .NET SDK (global.json file)
   - package-ecosystem: "dotnet-sdk"
