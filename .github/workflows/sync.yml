@@ -6,7 +6,7 @@ on:
       - main
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * *" # Daily at midnight UTC to catch new repos
+    - cron: "0 15 * * *" # Daily at 11 PM SGT (15:00 UTC) to catch new repos
 
 jobs:
   configure-repo-settings:
