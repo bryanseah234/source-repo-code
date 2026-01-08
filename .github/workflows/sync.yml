@@ -126,6 +126,7 @@ jobs:
             copy_if_exists "$SRC_BASE/.github/workflows/labeler.yml" ".github/workflows/labeler.yml"
             copy_if_exists "$SRC_BASE/.github/greetings.yml" ".github/greetings.yml"
             copy_if_exists "$SRC_BASE/.github/workflows/greetings.yml" ".github/workflows/greetings.yml"
+            copy_if_exists "$SRC_BASE/.github/FUNDING.yml" ".github/FUNDING.yml"
 
             # Stage changes (use -A to include added/removed files)
             git add -A
