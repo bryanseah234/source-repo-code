@@ -119,7 +119,7 @@ jobs:
               fi
             }
 
-            copy_if_exists "$SRC_BASE/.github/dependabot.yml" ".github/dependabot.yml"
+            copy_if_exists "$SRC_BASE/.github/dependabot_config.yml" ".github/dependabot.yml"
             copy_if_exists "$SRC_BASE/.deepsource.toml" ".deepsource.toml"
             copy_if_exists "$SRC_BASE/.sourcery.yml" ".sourcery.yml"
             copy_if_exists "$SRC_BASE/.github/workflows/trufflehog.yml" ".github/workflows/trufflehog.yml"
