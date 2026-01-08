@@ -6,7 +6,7 @@ on:
       - main
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'  # Daily at midnight UTC to catch new repos
+    - cron: "0 0 * * *" # Daily at midnight UTC to catch new repos
 
 jobs:
   configure-repo-settings:
@@ -18,15 +18,15 @@ jobs:
           github-token: ${{ secrets.GH_PAT }}
           script: |
             const owner = 'bryanseah234';
-            
+
             // Get all repositories for the user
             const repos = await github.paginate(github.rest.repos.listForAuthenticatedUser, {
               per_page: 100,
               affiliation: 'owner'
             });
-            
+
             console.log(`Found ${repos.length} repositories to configure`);
-            
+
             for (const repo of repos) {
               // Skip archived repos
               if (repo.archived) {
@@ -54,7 +54,7 @@ jobs:
                 console.log(`❌ Failed to configure ${repo.name}: ${error.message}`);
               }
             }
-            
+
             console.log('Repository settings configuration complete! ');
 
   force-sync:
@@ -74,6 +74,7 @@ jobs:
       - name: Authenticate gh CLI
         run: |
           echo "${GH_PAT}" | gh auth login --with-token
+          gh auth setup-git
 
       - name: Force Sync Files to All Repos
         run: |
@@ -135,10 +136,11 @@ jobs:
             if [ -n "$(git status --porcelain)" ]; then
               git commit -m "feat(config): Standardize CI/CD configurations via sync workflow"
               # Push will use gh's credential helper from auth above
-              git push origin HEAD || {
-                echo "Push failed for $REPO_NAME"
-              }
-              echo "Pushed changes to $REPO_NAME"
+              if git push origin HEAD; then
+                echo "Pushed changes to $REPO_NAME"
+              else
+                 echo "Push failed for $REPO_NAME"
+              fi
             else
               echo "No changes needed in $REPO_NAME, skipping push."
             fi
