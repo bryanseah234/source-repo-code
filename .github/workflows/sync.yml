@@ -147,4 +147,8 @@ jobs:
 
             # Go back to workspace
             cd - >/dev/null || exit
+
+            # Cleanup to save space
+            echo "cleaning up $TARGET_DIR..."
+            rm -rf "$TARGET_DIR"
           done
