@@ -70,7 +70,9 @@ jobs:
                     has_issues: true,
                     has_wiki: true,
                     has_projects: true,
-                    has_discussions: true
+                    has_discussions: true,
+                    allow_auto_merge: true,
+                    delete_branch_on_merge: true
                   })
                 );
                 
@@ -166,6 +168,8 @@ jobs:
             }
 
             mkdir -p .github/workflows
+            mkdir -p .github/skills
+            mkdir -p .agents/workflows
 
             SRC_BASE="$WORKDIR"
 
@@ -174,7 +178,11 @@ jobs:
               local dst="$2"
               if [ -f "$src" ]; then
                 cp -f "$src" "$dst"
-                echo "Copied $src -> $dst"
+                echo "Copied file $src -> $dst"
+              elif [ -d "$src" ]; then
+                rm -rf "$dst"
+                cp -r "$src" "$dst"
+                echo "Copied directory $src -> $dst"
               else
                 echo "Source missing, skipping copy: $src"
               fi
@@ -184,11 +192,15 @@ jobs:
             copy_if_exists "$SRC_BASE/.deepsource.toml" ".deepsource.toml"
             copy_if_exists "$SRC_BASE/.sourcery.yml" ".sourcery.yml"
             copy_if_exists "$SRC_BASE/.github/workflows/trufflehog.yml" ".github/workflows/trufflehog.yml"
+            copy_if_exists "$SRC_BASE/.github/workflows/dependabot-auto-merge.yml" ".github/workflows/dependabot-auto-merge.yml"
             copy_if_exists "$SRC_BASE/.github/labels.yml" ".github/labels.yml"
             copy_if_exists "$SRC_BASE/.github/workflows/labeler.yml" ".github/workflows/labeler.yml"
             copy_if_exists "$SRC_BASE/.github/greetings.yml" ".github/greetings.yml"
             copy_if_exists "$SRC_BASE/.github/workflows/greetings.yml" ".github/workflows/greetings.yml"
             copy_if_exists "$SRC_BASE/.github/FUNDING.yml" ".github/FUNDING.yml"
+            copy_if_exists "$SRC_BASE/AGENTS.md" "AGENTS.md"
+            copy_if_exists "$SRC_BASE/.github/skills" ".github/skills"
+            copy_if_exists "$SRC_BASE/.agents" ".agents"
 
             git add -A
 
