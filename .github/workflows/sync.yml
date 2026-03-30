@@ -169,7 +169,7 @@ jobs:
 
             mkdir -p .github/workflows
             mkdir -p .github/skills
-            mkdir -p .agents/workflows
+            mkdir -p .agent/workflows
 
             SRC_BASE="$WORKDIR"
 
@@ -200,7 +200,7 @@ jobs:
             copy_if_exists "$SRC_BASE/.github/FUNDING.yml" ".github/FUNDING.yml"
             copy_if_exists "$SRC_BASE/AGENTS.md" "AGENTS.md"
             copy_if_exists "$SRC_BASE/.github/skills" ".github/skills"
-            copy_if_exists "$SRC_BASE/.agents" ".agents"
+            copy_if_exists "$SRC_BASE/.agent" ".agent"
 
             git add -A
 
