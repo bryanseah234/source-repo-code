@@ -1,28 +1,31 @@
 # 讨论：跨 IDE/跨代理 Skills 注册与 MCP 配置同步
 
-> 状态：进行中 | 轮次：R4 | 日期：2026-04-22
+> 状态：进行中 | 轮次：R5 | 日期：2026-04-22
 
 ## 🔵 当前焦点
 
-- **技能推荐**：为 sourcerepo 推荐应添加的 Skills 集合
-- **跨 IDE/代理架构**：如何让 Skills 同时支持 Cursor、Claude Code、Cline、VS Code 等
-- **工作流拆分**：按关注点分离成多个独立 workflow
-- **技能注册机制**：`npx skills add` 仅用于注册/激活，不含运行时依赖
+- **重建 Skills 策略**：删除现有手写 skills 文档，改为使用 `npx skills` 规范来源重建
+- **技能来源筛选**：从公开 skills 仓库中挑选适合用户多仓库场景的 skills
+- **工作流拆分**：明确 3 个独立 workflow 的职责边界
+- **跨代理传播模型**：sourcerepo 中安装 project-level skills → sync 到所有仓库
 
 ## ⚪ 待讨论
 
-- [ ] 用户希望支持哪些具体的 IDE / 编码代理组合
-- [ ] 推荐的 Skills 列表是否需要优先级划分（必装 vs 可选）
-- [ ] 工作流拆分粒度：是否需要 3 个独立 workflow
-- [ ] MCP 配置格式：是否需要针对不同代理有不同的配置模板
+- [ ] 是否仅选择通用开发类 skills，还是也纳入领域型 skills（如 Base、Stitch）
+- [ ] 安装方式是将 sourcerepo 作为“已安装后的结果仓库”同步，还是保存安装命令清单再在每个目标仓库执行
+- [ ] MCP 配置是否与 skills workflow 完全独立
+- [ ] 是否维护一个“推荐 skills 清单”文档，便于未来增删
 
 ## ✅ 已确认
 
-- `npx skills add` 仅用于注册/激活 `.github/skills/*.md` 文件，不含运行时依赖
-- 目标：跨 IDE / 跨代理支持
-- 原则：按关注点分离工作流
+- 现有 `.github/skills/*.md` 不再视为有效资产，用户倾向于删除并重新建立
+- `npx skills` 是实际来源，skills 需要通过该工具安装后才算规范接入
+- 目标是让安装后的文件传播到当前和未来所有仓库
+- 用户同意按关注点分离拆分为 3 个 workflow
 
 ## ❌ 已否决
+
+- 继续沿用当前手写 `.github/skills/*.md` 作为正式 skills 来源
 
 ## 📁 归档
 
@@ -31,3 +34,4 @@
 | R1 | 用户想表达项目级 Skills 部署方式 | - |
 | R2 | 用户想扩展 sync.yml 支持 Skills + MCP | - |
 | R3 | 理解用户架构：sourcerepo → sync → 所有项目仓库 | - |
+| R4 | `npx skills add` 仅用于注册/激活 skills | - |
