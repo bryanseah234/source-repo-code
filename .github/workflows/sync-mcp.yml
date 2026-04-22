@@ -1,0 +1,38 @@
+name: Sync MCP Configs to All Repos
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'templates/mcp/**'
+      - 'docs/mcp-support-matrix.md'
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */3 * * *"
+jobs:
+  force-sync-mcp:
+    runs-on: ubuntu-latest
+    env:
+      GH_PAT: ${{ secrets.GH_PAT }}
+      SYNC_ITEMS: |
+        templates/mcp|templates/mcp
+        docs/mcp-support-matrix.md|docs/mcp-support-matrix.md
+      COMMIT_MESSAGE: |
+        feat(mcp): Update MCP templates and docs synced from source repo
+      PR_TITLE: |
+        Update MCP Configuration
+      PR_BODY: |
+        Automated MCP config sync from source repo.
+    steps:
+      - uses: actions/checkout@v4.1.7
+      - name: Install jq and GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq gh
+      - name: Authenticate gh CLI
+        run: |
+          echo "${GH_PAT}" | gh auth login --with-token
+          gh auth setup-git
+      - name: Sync MCP
+        shell: bash
+        run: bash .github/scripts/sync-selected-paths.sh
