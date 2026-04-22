@@ -1,0 +1,125 @@
+name: Sync Repo Settings & General Config to All Repos
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/**'
+      - '.github/FUNDING.yml'
+      - '.github/labels.yml'
+      - '.github/greetings.yml'
+      - 'AGENTS.md'
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */3 * * *"
+jobs:
+  configure-repo-settings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          script: |
+            const owner = '${{ github.repository_owner }}';
+            const maxRetries = 3;
+            const retryStatuses = new Set([429, 500, 502, 503, 504]);
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+            const withRetry = async (fn) => {
+              let lastError;
+              for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                  return await fn();
+                } catch (error) {
+                  lastError = error;
+                  const status = error.status || error.code;
+                  if (!retryStatuses.has(status) || attempt === maxRetries) {
+                    throw error;
+                  }
+                  const waitMs = Math.min(8000, 1000 * 2 ** (attempt - 1));
+                  await sleep(waitMs);
+                }
+              }
+              throw lastError;
+            };
+            const repos = await withRetry(() =>
+              github.paginate(github.rest.repos.listForAuthenticatedUser, {
+                per_page: 100,
+                affiliation: 'owner'
+              })
+            );
+            console.log(`Found ${repos.length} repositories to configure`);
+            const failures = [];
+            for (const repo of repos) {
+              if (repo.archived || repo.disabled) {
+                console.log(`Skipping archived or disabled repo: ${repo.name}`);
+                continue;
+              }
+              try {
+                console.log(`Configuring settings for: ${repo.name}`);
+                await withRetry(() =>
+                  github.rest.repos.update({
+                    owner,
+                    repo: repo.name,
+                    description: "Give me 1 ⭐ if it's cool.",
+                    homepage: "https://www.hong-yi.me",
+                    has_issues: true,
+                    has_wiki: true,
+                    has_projects: true,
+                    has_discussions: true,
+                    allow_auto_merge: true,
+                    delete_branch_on_merge: true,
+                    allow_squash_merge: true,
+                    allow_merge_commit: true,
+                    allow_rebase_merge: true,
+                    allow_forking: true,
+                    web_commit_signoff_required: false,
+                    has_downloads: true,
+                    has_pages: false
+                  })
+                );
+                console.log(`✅ Successfully configured settings for: ${repo.name}`);
+              } catch (error) {
+                console.log(`❌ Failed to configure ${repo.name}: ${error.message}`);
+                failures.push(repo.name);
+              }
+            }
+            if (failures.length > 0) {
+              console.log(`Settings failures: ${failures.join(', ')}`);
+            }
+            console.log('Repository settings configuration complete!');
+  force-sync-general-config:
+    runs-on: ubuntu-latest
+    needs: configure-repo-settings
+    env:
+      GH_PAT: ${{ secrets.GH_PAT }}
+      SYNC_ITEMS: |
+        .github/dependabot_config.yml|.github/dependabot.yml
+        .deepsource.toml|.deepsource.toml
+        .sourcery.yml|.sourcery.yml
+        .github/workflows/trufflehog.yml|.github/workflows/trufflehog.yml
+        .github/workflows/dependabot-auto-merge.yml|.github/workflows/dependabot-auto-merge.yml
+        .github/labels.yml|.github/labels.yml
+        .github/workflows/labeler.yml|.github/workflows/labeler.yml
+        .github/greetings.yml|.github/greetings.yml
+        .github/workflows/greetings.yml|.github/workflows/greetings.yml
+        .github/FUNDING.yml|.github/FUNDING.yml
+        AGENTS.md|AGENTS.md
+      COMMIT_MESSAGE: |
+        feat(config): Standardize general configurations synced from source repo
+      PR_TITLE: |
+        Sync General Configurations
+      PR_BODY: |
+        Automated config sync from source repo.
+    steps:
+      - uses: actions/checkout@v4.1.7
+      - name: Install jq and GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq gh
+      - name: Authenticate gh CLI
+        run: |
+          echo "${GH_PAT}" | gh auth login --with-token
+          gh auth setup-git
+      - name: Sync General Config
+        shell: bash
+        run: bash .github/scripts/sync-selected-paths.sh

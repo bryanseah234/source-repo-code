@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "skills": {
+    "conventional-commit": {
+      "source": "rlespinasse/agent-skills",
+      "sourceType": "github",
+      "computedHash": "e33788a9b4eb787c3d0dfb4f0c9dcf22dd65d9efd960e36bb6566fb5c642cc94"
+    },
+    "diataxis": {
+      "source": "rlespinasse/agent-skills",
+      "sourceType": "github",
+      "computedHash": "0f7c040102fbbb6158b99a5af17bd41d8abd30d3c09030173b150885351e7340"
+    },
+    "mcp-builder": {
+      "source": "mcp-use/skills",
+      "sourceType": "github",
+      "computedHash": "ee6e8470c10b834c02f479e08a7e22a0f37308fd74ddae8bbf22d8ebdbf52f9c"
+    },
+    "pin-github-actions": {
+      "source": "rlespinasse/agent-skills",
+      "sourceType": "github",
+      "computedHash": "828b9c6278159783c7ea0f2b539667c361fcecc222ba06ec113a78d037e16e7c"
+    },
+    "vercel-composition-patterns": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "575757e3e25761c8c562d6e395d29f0b76c98b1273c0bd72d88e6ab1bc9c7d42"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "ca7b0c0c6e5f2750043f7f0cd72d16ac4e2abc48f9b5500d047a4b77a2506212"
+    },
+    "vercel-react-view-transitions": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "c8952fc9127fa0564d0cb71dccb4215a5608ac933b5831104f09173a97a46f85"
+    },
+    "verify-pr-logs": {
+      "source": "rlespinasse/agent-skills",
+      "sourceType": "github",
+      "computedHash": "55c02103d16203797737131e0edf1c96cb8b71c04aebfd62425f6857d75a13c0"
+    },
+    "verify-readme-features": {
+      "source": "rlespinasse/agent-skills",
+      "sourceType": "github",
+      "computedHash": "2a6e6a4562402b0a4d95014295c58ceff99c001572fb864746eb6c1293b2ec71"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "f3bc47f890f42a44db1007ab390709ec368e4b8c089baee6b0007182236ac474"
+    }
+  }
+}
