@@ -42,6 +42,15 @@ copy_if_exists() {
   fi
 }
 
+force_stage_path() {
+  local path="$1"
+  if [ -e "$path" ]; then
+    git add -f "$path"
+  else
+    git add -A "$path" 2>/dev/null || true
+  fi
+}
+
 REPOS_JSON="$(gh api --paginate "user/repos?per_page=100&affiliation=owner" | jq -s 'add')"
 echo "Owner: $OWNER"
 echo "Source repo: $SOURCE_REPO_NAME"
@@ -81,6 +90,7 @@ while read -r repo; do
   while IFS='|' read -r src dst; do
     [ -z "$src" ] && continue
     copy_if_exists "$WORKDIR/$src" "$dst"
+    force_stage_path "$dst"
   done <<< "$SYNC_ITEMS"
 
   ### Delete .agent/ directory (old setup)
@@ -88,6 +98,7 @@ while read -r repo; do
     rm -rf .agent
     echo "Deleted .agent directory (old setup)"
   fi
+  git add -A .agent 2>/dev/null || true
 
   git add -A
 
