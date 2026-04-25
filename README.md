@@ -1,89 +1,84 @@
 # sourcerepo
 
-本仓库是所有项目仓库的同步源，负责统一维护并分发配置、Skills 和 MCP 模板。
+Central automation hub for all personal GitHub repositories. Every owned, non-archived, non-fork repo gets configuration, workflows, and hygiene rules synced here automatically every 3 hours.
 
-## 核心职能
+## How it works
 
-- 同步 GitHub Actions 通用配置（Dependabot、labels、greetings、TruffleHog）
-- 通过 `npx skills` 安装规范的 Agent Skills，并同步到所有仓库
-- 传播 MCP 配置模板与说明文档
-- 统一仓库设置（description、homepage、issue/wiki/project/discussion 等）及合并策略
-- 维护 AGENTS.md 作为 Agent 行为规范
+Three sync workflows run on a staggered 3-hour cron and on push to relevant paths. All call the same script: `.github/scripts/sync-selected-paths.sh`.
 
-## 仓库设置同步
+| Workflow | Purpose | Cron |
+|----------|---------|------|
+| `sync-repo-settings.yml` | Repo settings, workflows, Dependabot config, labels, templates, AGENTS.md, secrets | `0 */3 * * *` |
+| `sync-mcp.yml` | MCP config cleanup + gitignore injection | `20 */3 * * *` |
+| `sync-skills.yml` | Dot folder cleanup, skills removal, gitignore injection | `40 */3 * * *` |
 
-本仓库通过 GitHub Actions 自动为所有仓库统一配置以下设置：
+## What gets synced to every repo
 
-### 基本信息
-- `description`: "Give me 1 ⭐ if it's cool."
-- `homepage`: https://www.hong-yi.me
-- `visibility`: 保留现有值（不覆盖）
+| Item | Via |
+|------|-----|
+| GitHub Actions workflows (dependabot-auto-merge, auto-merge-bots, trufflehog, labeler, greetings) | `sync-repo-settings.yml` |
+| Dependabot config (all ecosystems, daily) | `sync-repo-settings.yml` |
+| Repo settings (auto-merge, delete-on-merge, squash/merge/rebase) | `sync-repo-settings.yml` |
+| `GH_PAT` secret (propagated for admin merges) | `sync-repo-settings.yml` |
+| Issue templates, PR template | `sync-repo-settings.yml` |
+| `CONTRIBUTING.md`, `SECURITY.md`, `AGENTS.md`, `.gitattributes` | `sync-repo-settings.yml` |
+| DeepSource + Sourcery config | `sync-repo-settings.yml` |
 
-### 功能开关
-- `has_issues`: `true`（启用 Issues）
-- `has_wiki`: `true`（启用 Wiki）
-- `has_projects`: `true`（启用 Projects）
-- `has_discussions`: `true`（启用 Discussions）
-- `has_downloads`: `true`（启用 downloads）
-- `has_pages`: `false`
+## What is NOT synced (intentionally local-only)
 
-### 合并策略
-- `allow_squash_merge`: `true`（允许 Squash Merge）
-- `allow_merge_commit`: `true`（允许 Merge Commit）
-- `allow_rebase_merge`: `true`（允许 Rebase Merge）
+| Item | Reason |
+|------|--------|
+| Dot tool folders (`.claude/`, `.windsurf/`, `.roo/`, etc.) | ~40k files — gitignored, each dev manages their own AI tools |
+| `skills/`, `skills-lock.json` | AI tool skills — per-developer, not project-specific |
+| `docs/`, `templates/` | Reference only, not for collaborators |
 
-### 合并与分支
-- `allow_auto_merge`: `true`（允许自动合并）
-- `delete_branch_on_merge`: `true`（合并后删除分支）
-- `allow_forking`: `true`（允许 Forking）
+The sync script **actively deletes** these from target repos and injects `.gitignore` entries to prevent re-accumulation. This keeps `git status` fast for collaborators.
 
-- `web_commit_signoff_required`: `false`（不要求 Web 提交签名）
+## Bot PR auto-merge
 
-这些设置会在每个仓库创建或修改时被统一应用。
+All bot PRs merge automatically on open — no manual action needed:
 
-## Skills 管理
+| Bot | Workflow |
+|-----|---------|
+| Dependabot (all versions including major) | `dependabot-auto-merge.yml` |
+| Snyk, Sourcery, DeepSource, GitHub Copilot SWE | `auto-merge-bots.yml` |
 
-本仓库使用 `npx skills` 安装公开 skills，并将安装结果同步到其他仓库。
+Both use `GH_PAT` with `--admin` to bypass branch protection rules.
 
-### 已安装 Skills
+## Local tools
 
-- `web-design-guidelines`：UI/UX、可访问性、前端审查
-- `vercel-react-best-practices`：React/Next.js 性能与最佳实践
-- `vercel-composition-patterns`：React 组件组合模式
-- `vercel-react-view-transitions`：React 视图过渡动画
-- `conventional-commit`：规范 commit message
-- `pin-github-actions`：GitHub Actions SHA 固定
-- `verify-pr-logs`：CI 日志诊断
-- `verify-readme-features`：README 与实现一致性核验
-- `diataxis`：文档体系治理
-- `mcp-builder`：MCP server 设计与构建
+| Script | Purpose |
+|--------|---------|
+| `sync_repos.py` | Pull / clone all GitHub repos locally. Defers diverged branches for interactive resolution. |
+| `push_repos.py` | Stage, commit, and push all local repos with changes. Respects branch protection. |
+| `02 RunSync.bat` | Runs `sync_repos.py` using portable Git + Python |
+| `03 RunPush.bat` | Runs `push_repos.py` using portable Git + Python |
 
-### Skills 安装方式
+## Setup
 
-在 `sourcerepo` 中 project-level 安装，再将结果同步出去。不在每个目标仓库重复执行安装命令。
+1. Create a GitHub PAT with `repo`, `workflow`, and `admin:repo_hook` scopes
+2. Add it as `GH_PAT` in this repo: **Settings → Secrets and variables → Actions**
+3. `sync-repo-settings.yml` automatically propagates `GH_PAT` to all other repos
 
-详细清单与来源参见 [`docs/skills-manifest.md`](<kfile name="skills-manifest.md" path="docs/skills-manifest.md">docs/skills-manifest.md</kfile>)。
+## Installed Skills
 
-## MCP 配置
+Skills installed via `npx skills`, tracked in `skills-lock.json` (320+ entries):
 
-- 当前阶段：传播配置模板与支持文档，不承诺所有 IDE/Agent 自动读取同一文件
-- 详细策略与支持矩阵参见 [`docs/mcp-support-matrix.md`](<kfile name="mcp-support-matrix.md" path="docs/mcp-support-matrix.md">docs/mcp-support-matrix.md</kfile>)
+| Skill | Purpose |
+|-------|---------|
+| `web-design-guidelines` | UI/UX, accessibility, frontend review |
+| `vercel-react-best-practices` | React/Next.js performance patterns |
+| `vercel-composition-patterns` | React component composition |
+| `vercel-react-view-transitions` | View transition animations |
+| `conventional-commit` | Commit message standards |
+| `pin-github-actions` | Pin Actions workflows to SHA |
+| `verify-pr-logs` | CI log diagnosis |
+| `verify-readme-features` | README vs implementation consistency |
+| `diataxis` | Documentation governance |
+| `mcp-builder` | MCP server design and build |
 
-## 同步工作流
-
-本仓库维持三个独立的同步 workflow，实现关注点分离：
-
-- [`sync-skills.yml`](<kfile name="sync-skills.yml" path=".github/workflows/sync-skills.yml">.github/workflows/sync-skills.yml</kfile>)：同步 Skills（`.agents/skills`、`.claude/skills`、`docs/skills-manifest.md`）
-- [`sync-mcp.yml`](<kfile name="sync-mcp.yml" path=".github/workflows/sync-mcp.yml">.github/workflows/sync-mcp.yml</kfile>)：同步 MCP 模板与文档（`templates/mcp`、`docs/mcp-support-matrix.md`）
-- [`sync-repo-settings.yml`](<kfile name="sync-repo-settings.yml" path=".github/workflows/sync-repo-settings.yml">.github/workflows/sync-repo-settings.yml</kfile>)：同步仓库设置与通用配置（GitHub Actions、Dependabot、labels、AGENTS.md 等）
-
-## 如何使用
-
-- **新增/更新 Skills**：在 `sourcerepo` 使用 `npx skills add` 安装（project-level），同步workflow 会自动传播
-- **新增/更新配置**：修改仓库内相关文件，对应的 workflow 会自动传播
-- **手动触发**：在 GitHub Actions 中可选择对应 workflow 运行 `workflow_dispatch`
-- **未来新仓库**：定时任务会自动将配置同步到新仓库
+Full manifest: [`docs/skills-manifest.md`](docs/skills-manifest.md)
 
 ## License
 
-SPDX-License-Identifier: MIT
+MIT

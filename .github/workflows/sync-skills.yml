@@ -4,28 +4,22 @@ on:
     branches:
       - main
     paths:
-      - 'skills/**'
-      - 'skills-lock.json'
-      - 'docs/skills-manifest.md'
       - '.github/scripts/sync-selected-paths.sh'
   workflow_dispatch:
   schedule:
-    - cron: "0 */3 * * *"
+    - cron: "40 */3 * * *"
 jobs:
   force-sync-skills:
     runs-on: ubuntu-latest
     env:
       GH_PAT: ${{ secrets.GH_PAT }}
-      SYNC_ITEMS: |
-        skills|skills
-        skills-lock.json|skills-lock.json
-        docs/skills-manifest.md|docs/skills-manifest.md
+      SYNC_ITEMS: ""
       COMMIT_MESSAGE: |
-        feat(skills): sync skills from sourcerepo
+        chore(sync): remove AI tool dirs and update .gitignore
       PR_TITLE: |
-        Update Skills
+        Sync: Remove AI tool directories
       PR_BODY: |
-        Automated skills sync from sourcerepo. Removes AI tool dot directories and updates .gitignore.
+        Removes dot tool directories, skills/, docs/, templates/ from git tracking and updates .gitignore.
     steps:
       - uses: actions/checkout@v6
       - name: Install jq and GitHub CLI
