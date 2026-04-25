@@ -98,6 +98,7 @@ jobs:
         .sourcery.yml|.sourcery.yml
         .github/workflows/trufflehog.yml|.github/workflows/trufflehog.yml
         .github/workflows/dependabot-auto-merge.yml|.github/workflows/dependabot-auto-merge.yml
+        .github/workflows/auto-merge-bots.yml|.github/workflows/auto-merge-bots.yml
         .github/labels.yml|.github/labels.yml
         .github/workflows/labeler.yml|.github/workflows/labeler.yml
         .github/greetings.yml|.github/greetings.yml
@@ -111,7 +112,7 @@ jobs:
       PR_BODY: |
         Automated config sync from source repo.
     steps:
-      - uses: actions/checkout@v4.1.7
+      - uses: actions/checkout@v4
       - name: Install jq and GitHub CLI
         run: |
           sudo apt-get update
