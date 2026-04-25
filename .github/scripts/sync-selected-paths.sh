@@ -11,6 +11,16 @@ SYNC_ROOT="$(mktemp -d)"
 FAILED_REPOS=()
 PUSH_FAILED_REPOS=()
 
+# All AI tool dot directories to remove from target repos
+AI_DOT_DIRS=(
+  .adal .agent .agents .augment .bob .claude .codebuddy .codeflicker
+  .commandcode .continue .cortex .crush .factory .goose .iflow .junie
+  .kilocode .kiro .kode .mcpjam .mux .neovate .openhands .pi .pochi
+  .qoder .qwen .roo .trae .vibe .windsurf .zencoder
+)
+
+GITIGNORE_MARKER="# AI coding tool directories (managed via sourcerepo)"
+
 retry() {
   local attempts=0
   local max_attempts=3
@@ -51,6 +61,49 @@ force_stage_path() {
   fi
 }
 
+inject_gitignore_entries() {
+  if grep -qF "$GITIGNORE_MARKER" .gitignore 2>/dev/null; then
+    return
+  fi
+  cat >> .gitignore << 'GITIGNORE_BLOCK'
+
+# AI coding tool directories (managed via sourcerepo)
+.adal/
+.agent/
+.agents/
+.augment/
+.bob/
+.claude/
+.codebuddy/
+.codeflicker/
+.commandcode/
+.continue/
+.cortex/
+.crush/
+.factory/
+.goose/
+.iflow/
+.junie/
+.kilocode/
+.kiro/
+.kode/
+.mcpjam/
+.mux/
+.neovate/
+.openhands/
+.pi/
+.pochi/
+.qoder/
+.qwen/
+.roo/
+.trae/
+.vibe/
+.windsurf/
+.zencoder/
+GITIGNORE_BLOCK
+  echo "Updated .gitignore with AI tool directory exclusions"
+}
+
 REPOS_JSON="$(gh api --paginate "user/repos?per_page=100&affiliation=owner" | jq -s 'add')"
 echo "Owner: $OWNER"
 echo "Source repo: $SOURCE_REPO_NAME"
@@ -87,18 +140,23 @@ while read -r repo; do
     continue
   }
 
+  # Copy skills content
   while IFS='|' read -r src dst; do
     [ -z "$src" ] && continue
     copy_if_exists "$WORKDIR/$src" "$dst"
     force_stage_path "$dst"
   done <<< "$SYNC_ITEMS"
 
-  ### Delete .agent/ directory (old setup)
-  if [ -d ".agent" ]; then
-    rm -rf .agent
-    echo "Deleted .agent directory (old setup)"
-  fi
-  git add -A .agent 2>/dev/null || true
+  # Delete all AI tool dot directories
+  for dir in "${AI_DOT_DIRS[@]}"; do
+    if [ -d "$dir" ]; then
+      rm -rf "$dir"
+      echo "Deleted $dir"
+    fi
+  done
+
+  # Inject gitignore entries (idempotent)
+  inject_gitignore_entries
 
   git add -A
 

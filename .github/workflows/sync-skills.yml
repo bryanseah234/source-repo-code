@@ -4,39 +4,10 @@ on:
     branches:
       - main
     paths:
-      - '.agents/skills/**'
-      - '.claude/skills/**'
       - 'skills/**'
       - 'skills-lock.json'
-      - '.adal/**'
-      - '.augment/**'
-      - '.bob/**'
-      - '.codebuddy/**'
-      - '.commandcode/**'
-      - '.factory/**'
-      - '.continue/**'
-      - '.cortex/**'
-      - '.crush/**'
-      - '.goose/**'
-      - '.iflow/**'
-      - '.junie/**'
-      - '.kilocode/**'
-      - '.kiro/**'
-      - '.kode/**'
-      - '.mcpjam/**'
-      - '.mux/**'
-      - '.neovate/**'
-      - '.openhands/**'
-      - '.pi/**'
-      - '.pochi/**'
-      - '.qoder/**'
-      - '.qwen/**'
-      - '.roo/**'
-      - '.trae/**'
-      - '.vibe/**'
-      - '.windsurf/**'
-      - '.zencoder/**'
       - 'docs/skills-manifest.md'
+      - '.github/scripts/sync-selected-paths.sh'
   workflow_dispatch:
   schedule:
     - cron: "0 */3 * * *"
@@ -46,45 +17,15 @@ jobs:
     env:
       GH_PAT: ${{ secrets.GH_PAT }}
       SYNC_ITEMS: |
-        .agents/skills|.agents/skills
-        .claude/skills|.claude/skills
         skills|skills
         skills-lock.json|skills-lock.json
-        .adal|.adal
-        .augment|.augment
-        .bob|.bob
-        .codebuddy|.codebuddy
-        .commandcode|.commandcode
-        .factory|.factory
-        .continue|.continue
-        .cortex|.cortex
-        .crush|.crush
-        .goose|.goose
-        .iflow|.iflow
-        .junie|.junie
-        .kilocode|.kilocode
-        .kiro|.kiro
-        .kode|.kode
-        .mcpjam|.mcpjam
-        .mux|.mux
-        .neovate|.neovate
-        .openhands|.openhands
-        .pi|.pi
-        .pochi|.pochi
-        .qoder|.qoder
-        .qwen|.qwen
-        .roo|.roo
-        .trae|.trae
-        .vibe|.vibe
-        .windsurf|.windsurf
-        .zencoder|.zencoder
         docs/skills-manifest.md|docs/skills-manifest.md
       COMMIT_MESSAGE: |
-        feat(skills): Update skills to latest version synced from source repo
+        feat(skills): sync skills from sourcerepo
       PR_TITLE: |
         Update Skills
       PR_BODY: |
-        Automated skills sync from source repo.
+        Automated skills sync from sourcerepo. Removes AI tool dot directories and updates .gitignore.
     steps:
       - uses: actions/checkout@v4.1.7
       - name: Install jq and GitHub CLI
