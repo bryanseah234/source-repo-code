@@ -11,15 +11,23 @@ SYNC_ROOT="$(mktemp -d)"
 FAILED_REPOS=()
 PUSH_FAILED_REPOS=()
 
-# All AI tool dot directories to remove from target repos
-AI_DOT_DIRS=(
-  .adal .agent .agents .augment .bob .claude .codebuddy .codeflicker
-  .commandcode .continue .cortex .crush .factory .goose .iflow .junie
-  .kilocode .kiro .kode .mcpjam .mux .neovate .openhands .pi .pochi
-  .qoder .qwen .roo .trae .vibe .windsurf .zencoder
+# Dot files/folders that are NEVER deleted from target repos
+EXEMPT_DOTS=(
+  ".git" ".github" ".gitignore" ".gitattributes" ".gitmodules"
+  ".editorconfig" ".nvmrc" ".node-version" ".python-version" ".tool-versions"
+  ".prettierrc" ".prettierrc.js" ".prettierrc.cjs" ".prettierrc.json"
+  ".prettierrc.yml" ".prettierrc.yaml" ".prettierignore"
+  ".eslintrc" ".eslintrc.js" ".eslintrc.cjs" ".eslintrc.json"
+  ".eslintrc.yml" ".eslintrc.yaml" ".eslintignore"
+  ".stylelintrc" ".stylelintrc.js" ".stylelintrc.json" ".stylelintrc.yml"
+  ".babelrc" ".babelrc.js" ".babelrc.cjs" ".babelrc.json"
+  ".browserslistrc" ".dockerignore"
+  ".npmrc" ".yarnrc" ".yarnrc.yml" ".pnpmfile.cjs"
+  ".env.example" ".env.template" ".env.sample"
+  ".sourcery.yml" ".deepsource.toml" ".htaccess"
 )
 
-GITIGNORE_MARKER="# AI coding tool directories (managed via sourcerepo)"
+GITIGNORE_MARKER="# AI / editor dot directories (managed via sourcerepo)"
 
 retry() {
   local attempts=0
@@ -61,47 +69,60 @@ force_stage_path() {
   fi
 }
 
+# Delete all dot items at repo root that are not on the exemption list
+delete_unlisted_dot_items() {
+  for item in .[!.]* ; do
+    [ -e "$item" ] || continue
+    local exempt=false
+    for e in "${EXEMPT_DOTS[@]}"; do
+      [[ "$item" == "$e" ]] && exempt=true && break
+    done
+    if [ "$exempt" = false ]; then
+      rm -rf "$item"
+      echo "Deleted dot item: $item"
+    fi
+  done
+}
+
+# Delete all *.code-workspace files recursively (skip .git/)
+delete_code_workspace_files() {
+  find . -path "./.git" -prune -o -name "*.code-workspace" -print -exec rm -f {} \;
+}
+
+# Inject .gitignore entries — idempotent, uses broad .* pattern with exemptions
 inject_gitignore_entries() {
   if grep -qF "$GITIGNORE_MARKER" .gitignore 2>/dev/null; then
     return
   fi
   cat >> .gitignore << 'GITIGNORE_BLOCK'
 
-# AI coding tool directories (managed via sourcerepo)
-.adal/
-.agent/
-.agents/
-.augment/
-.bob/
-.claude/
-.codebuddy/
-.codeflicker/
-.commandcode/
-.continue/
-.cortex/
-.crush/
-.factory/
-.goose/
-.iflow/
-.junie/
-.kilocode/
-.kiro/
-.kode/
-.mcpjam/
-.mux/
-.neovate/
-.openhands/
-.pi/
-.pochi/
-.qoder/
-.qwen/
-.roo/
-.trae/
-.vibe/
-.windsurf/
-.zencoder/
+# AI / editor dot directories (managed via sourcerepo)
+.*
+!.github/
+!.gitignore
+!.gitattributes
+!.gitmodules
+!.editorconfig
+!.nvmrc
+!.node-version
+!.python-version
+!.tool-versions
+!.prettierrc*
+!.eslintrc*
+!.stylelintrc*
+!.babelrc*
+!.browserslistrc
+!.dockerignore
+!.npmrc
+!.yarnrc
+!.yarnrc.yml
+!.env.example
+!.env.template
+!.env.sample
+!.sourcery.yml
+!.deepsource.toml
 GITIGNORE_BLOCK
-  echo "Updated .gitignore with AI tool directory exclusions"
+  echo "Updated .gitignore with dot directory exclusions"
 }
 
 REPOS_JSON="$(gh api --paginate "user/repos?per_page=100&affiliation=owner" | jq -s 'add')"
@@ -140,22 +161,18 @@ while read -r repo; do
     continue
   }
 
-  # Copy skills content
+  # Copy skills content from sourcerepo
   while IFS='|' read -r src dst; do
     [ -z "$src" ] && continue
     copy_if_exists "$WORKDIR/$src" "$dst"
     force_stage_path "$dst"
   done <<< "$SYNC_ITEMS"
 
-  # Delete all AI tool dot directories
-  for dir in "${AI_DOT_DIRS[@]}"; do
-    if [ -d "$dir" ]; then
-      rm -rf "$dir"
-      echo "Deleted $dir"
-    fi
-  done
+  # Clean up dot items and .code-workspace files
+  delete_unlisted_dot_items
+  delete_code_workspace_files
 
-  # Inject gitignore entries (idempotent)
+  # Inject .gitignore entries (idempotent)
   inject_gitignore_entries
 
   git add -A
