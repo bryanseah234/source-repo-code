@@ -116,6 +116,10 @@ jobs:
         .github/workflows/trufflehog.yml|.github/workflows/trufflehog.yml
         .github/workflows/dependabot-auto-merge.yml|.github/workflows/dependabot-auto-merge.yml
         .github/workflows/auto-merge-bots.yml|.github/workflows/auto-merge-bots.yml
+        .github/workflows/summary.yml|.github/workflows/summary.yml
+        .github/workflows/codeql.yml|.github/workflows/codeql.yml
+        .github/workflows/scorecard.yml|.github/workflows/scorecard.yml
+        .github/workflows/dependency-review.yml|.github/workflows/dependency-review.yml
         .github/ISSUE_TEMPLATE/bug_report.md|.github/ISSUE_TEMPLATE/bug_report.md
         .github/ISSUE_TEMPLATE/feature_request.md|.github/ISSUE_TEMPLATE/feature_request.md
         .github/pull_request_template.md|.github/pull_request_template.md
