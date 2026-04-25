@@ -27,7 +27,7 @@ jobs:
       PR_BODY: |
         Automated skills sync from sourcerepo. Removes AI tool dot directories and updates .gitignore.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install jq and GitHub CLI
         run: |
           sudo apt-get update

@@ -24,7 +24,7 @@ jobs:
       PR_BODY: |
         Automated MCP config sync from source repo.
     steps:
-      - uses: actions/checkout@v4.1.7
+      - uses: actions/checkout@v6
       - name: Install jq and GitHub CLI
         run: |
           sudo apt-get update
