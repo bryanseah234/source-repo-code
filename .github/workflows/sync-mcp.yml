@@ -4,25 +4,22 @@ on:
     branches:
       - main
     paths:
-      - 'templates/mcp/**'
-      - 'docs/mcp-support-matrix.md'
+      - '.github/scripts/sync-selected-paths.sh'
   workflow_dispatch:
   schedule:
-    - cron: "0 */3 * * *"
+    - cron: "20 */3 * * *"
 jobs:
   force-sync-mcp:
     runs-on: ubuntu-latest
     env:
       GH_PAT: ${{ secrets.GH_PAT }}
-      SYNC_ITEMS: |
-        templates/mcp|templates/mcp
-        docs/mcp-support-matrix.md|docs/mcp-support-matrix.md
+      SYNC_ITEMS: ""
       COMMIT_MESSAGE: |
-        feat(mcp): Update MCP templates and docs synced from source repo
+        chore(sync): remove AI tool dirs and update .gitignore
       PR_TITLE: |
-        Update MCP Configuration
+        Sync: Remove AI tool directories
       PR_BODY: |
-        Automated MCP config sync from source repo.
+        Removes dot tool directories, skills/, docs/, templates/ from git tracking and updates .gitignore.
     steps:
       - uses: actions/checkout@v6
       - name: Install jq and GitHub CLI

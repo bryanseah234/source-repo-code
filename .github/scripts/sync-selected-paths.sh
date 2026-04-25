@@ -121,6 +121,10 @@ inject_gitignore_entries() {
 !.env.sample
 !.sourcery.yml
 !.deepsource.toml
+skills/
+skills-lock.json
+docs/
+templates/
 GITIGNORE_BLOCK
   echo "Updated .gitignore with dot directory exclusions"
 }
@@ -171,6 +175,11 @@ while read -r repo; do
   # Clean up dot items and .code-workspace files
   delete_unlisted_dot_items
   delete_code_workspace_files
+
+  # Remove AI tool / generated dirs from git tracking
+  for item in skills skills-lock.json docs templates; do
+    [ -e "$item" ] && rm -rf "$item" && echo "Removed: $item"
+  done
 
   # Inject .gitignore entries (idempotent)
   inject_gitignore_entries
