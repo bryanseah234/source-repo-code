@@ -105,8 +105,46 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
       time: "15:00"
+      day: "monday"
+    # Only auto-update patch versions for packages that affect build config.
+    # Major/minor bumps for these packages often require manual config changes
+    # (e.g. tailwindcss v4 moved its PostCSS plugin, vue-router v5 needs pinia v3).
+    groups:
+      patch-safe:
+        update-types:
+          - "patch"
+      minor-updates:
+        update-types:
+          - "minor"
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+          - "vue"
+          - "vue-router"
+          - "pinia"
+          - "vite"
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "typescript"
+    ignore:
+      # These packages have historically caused breaking config changes on major bumps.
+      # Dependabot will still open PRs but they won't auto-merge (build check gates them).
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@tailwindcss/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vue-router"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pinia"
+        update-types: ["version-update:semver-major"]
 
   # NuGet (.nuspec, .csproj, etc. files)
   - package-ecosystem: "nuget"
