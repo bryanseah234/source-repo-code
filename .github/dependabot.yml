@@ -145,6 +145,12 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "pinia"
         update-types: ["version-update:semver-major"]
+      # Also block minor bumps for tailwindcss — v3→v4 was a minor-style breaking change
+      # that required full CSS and config migration. Only allow patch updates.
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "@tailwindcss/*"
+        update-types: ["version-update:semver-minor"]
 
   # NuGet (.nuspec, .csproj, etc. files)
   - package-ecosystem: "nuget"
