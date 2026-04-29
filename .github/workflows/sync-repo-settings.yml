@@ -9,6 +9,7 @@ on:
       - '.github/labels.yml'
       - '.github/greetings.yml'
       - 'AGENTS.md'
+      - '.github/dependabot_config.yml'
   workflow_dispatch:
   schedule:
     - cron: "0 */3 * * *"
@@ -120,6 +121,7 @@ jobs:
         .github/workflows/codeql.yml|.github/workflows/codeql.yml
         .github/workflows/scorecard.yml|.github/workflows/scorecard.yml
         .github/workflows/dependency-review.yml|.github/workflows/dependency-review.yml
+        .github/workflows/ci.yml|.github/workflows/ci.yml
         .github/ISSUE_TEMPLATE/bug_report.md|.github/ISSUE_TEMPLATE/bug_report.md
         .github/ISSUE_TEMPLATE/feature_request.md|.github/ISSUE_TEMPLATE/feature_request.md
         .github/pull_request_template.md|.github/pull_request_template.md
