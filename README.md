@@ -45,15 +45,6 @@ All bot PRs merge automatically on open — no manual action needed:
 
 Both use `GH_PAT` with `--admin` to bypass branch protection rules.
 
-## Local tools
-
-| Script | Purpose |
-|--------|---------|
-| `sync_repos.py` | Pull / clone all GitHub repos locally. Defers diverged branches for interactive resolution. |
-| `push_repos.py` | Stage, commit, and push all local repos with changes. Respects branch protection. |
-| `02 RunSync.bat` | Runs `sync_repos.py` using portable Git + Python |
-| `03 RunPush.bat` | Runs `push_repos.py` using portable Git + Python |
-
 ## Setup
 
 1. Create a GitHub PAT with `repo`, `workflow`, and `admin:repo_hook` scopes
