@@ -73,3 +73,40 @@ Full manifest: [`docs/skills-manifest.md`](docs/skills-manifest.md)
 ## License
 
 MIT
+
+## Operational details
+
+### Retry and fallback behavior
+
+The sync script (sync-selected-paths.sh) implements:
+
+- **Exponential backoff retry** (3 attempts, 2^n second delays) on git clone and git push operations
+- **PR fallback**: if a direct push to the default branch fails (e.g., branch protection), the script creates a sync-<run-id> branch and opens a PR automatically
+- **Failure tracking**: clone and push failures are collected and reported at the end of the run
+
+### Cleanup behavior
+
+The sync script performs these cleanup actions on every target repo:
+
+- **Dot directory removal**: deletes all root-level dot items except an explicit exemption list (.git, .github, .editorconfig, package manager configs, linter configs, .env.* templates)
+- **Workspace file removal**: recursively deletes all *.code-workspace files
+- **Directory removal**: removes skills/, skills-lock.json, docs/, 	emplates/ from git tracking
+
+### Visibility policy
+
+The sync-repo-settings.yml workflow enforces:
+
+- All repos set to **private** by default
+- Exception: repos with 	heprawn in the name are set to **public**
+
+### Manual sweep
+
+The uto-merge-bots.yml workflow supports workflow_dispatch to merge ALL open bot PRs across the repo in a single sweep.
+
+### Why sync-mcp and sync-skills are separate workflows
+
+Both sync-mcp.yml and sync-skills.yml run the same cleanup logic (delete dot dirs, inject gitignore). They are staggered at 20-minute intervals (:20 and :40 past the hour) to:
+
+1. Reduce GitHub API rate limit pressure
+2. Isolate failures — if one workflow errors, the other still runs
+3. Allow independent manual triggers via workflow_dispatch
