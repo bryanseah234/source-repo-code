@@ -1,81 +1,90 @@
-# PRD: sourcerepo
+# PRD: Central Repository Automation Hub
 
-## Overview
-A central GitHub automation hub that keeps all of Bryan's personal repos in sync. Three staggered cron workflows run every 3 hours, pushing standardized configuration files (GitHub Actions workflows, Dependabot config, issue labels, PR templates, AGENTS.md, MCP config, gitignore rules, and skills cleanup) to every owned non-archived non-fork repository via a shared sync script.
+## A. Executive Summary
 
-## Goals
-- Sync GitHub Actions workflows to all personal repos
-- Sync Dependabot configuration and security settings
-- Sync issue labels and PR templates
-- Sync AGENTS.md and repo-level configuration
-- Remove unwanted dot folders and skills from repos
-- Clean up MCP config and inject standard gitignore entries
-- Run automatically every 3 hours without manual intervention
+This system serves as a central automation hub that enforces consistent configuration, security scanning, and operational hygiene across all personal GitHub repositories. It operates autonomously via scheduled GitHub Actions workflows, requiring zero manual intervention after initial setup.
 
-## Non-Goals
-- Syncing forked or archived repos
-- Per-repo customization overrides
-- Secret rotation
-- Deployment pipelines
+## B. System Architecture
 
-## User Stories
-- As Bryan, I want all my repos to have consistent GitHub Actions, labels, and templates without updating each one manually.
-- As Bryan, I want any new repo I create to automatically receive standard configurations within 3 hours.
+`
+┌─────────────────────────────────────┐
+│         Source Repository           │
+│  (Single source of truth)           │
+│                                     │
+│  ┌──────────────┐  ┌─────────────┐ │
+│  │ Config Files │  │ Workflows   │ │
+│  │ (templates)  │  │ (sync logic)│ │
+│  └──────┬───────┘  └──────┬──────┘ │
+└─────────┼──────────────────┼────────┘
+          │                  │
+          ▼                  ▼
+┌─────────────────────────────────────┐
+│     GitHub Actions (Cron)           │
+│                                     │
+│  :00 → sync-repo-settings.yml      │
+│  :20 → sync-mcp.yml                │
+│  :40 → sync-skills.yml             │
+│         (every 3 hours)             │
+└─────────────────┬───────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────┐
+│     Target Repositories (all)       │
+│                                     │
+│  • Config files pushed              │
+│  • Dot dirs deleted                 │
+│  • .gitignore injected              │
+│  • Repo settings enforced           │
+│  • GH_PAT secret propagated         │
+└─────────────────────────────────────┘
+`
 
-## Tech Stack
-- **Platform**: GitHub Actions
-- **Language**: Bash (`.github/scripts/sync-selected-paths.sh`)
-- **Trigger**: cron (every 3 hours) + push to relevant paths
+**Data Flow:**
+1. Source repo stores canonical config files and workflow definitions
+2. GitHub Actions cron triggers every 3 hours (staggered at 0/20/40 minutes)
+3. Sync script queries GitHub API for all owned non-archived non-fork repos
+4. For each target repo: clone → copy configs → delete unwanted items → inject gitignore → commit → push (or open PR on failure)
 
-## Architecture
-```
-sourcerepo/
-├── .github/
-│   ├── workflows/
-│   │   ├── sync-repo-settings.yml   # Cron 0 */3 * * *
-│   │   ├── sync-mcp.yml             # Cron 20 */3 * * *
-│   │   └── sync-skills.yml          # Cron 40 */3 * * *
-│   └── scripts/
-│       └── sync-selected-paths.sh   # Core sync logic
-├── skills-lock.json                 # Pinned skills versions
-├── README.md
-└── AGENTS.md
-```
+## C. Feature Matrix
 
-**Workflow split (staggered to avoid rate limiting):**
+| Feature | Implementation | Trigger |
+|---------|---------------|---------|
+| Config file sync (workflows, Dependabot, templates, AGENTS.md) | sync-repo-settings.yml + sync-selected-paths.sh | Cron (0 \*/3 \* \* \*) + push to main |
+| Repo settings enforcement (private, auto-merge, merge methods) | sync-repo-settings.yml (github-script job) | Cron (0 \*/3 \* \* \*) |
+| Secret propagation (GH_PAT to all repos) | sync-repo-settings.yml (propagate-secrets job) | Cron (0 \*/3 \* \* \*) |
+| AI dot directory cleanup | sync-mcp.yml + sync-skills.yml | Cron (20,40 \*/3 \* \* \*) |
+| .gitignore injection (idempotent) | sync-selected-paths.sh → inject_gitignore_entries() | Every sync run |
+| Dependabot PR auto-merge | dependabot-auto-merge.yml | PR events + Build Check completion |
+| Bot PR auto-merge (Snyk, Sourcery, DeepSource, Copilot) | uto-merge-bots.yml | PR events + Build Check completion |
+| Secret scanning | 	rufflehog.yml | Push, PR, daily at 15:00 UTC |
+| Build verification (JS/TS projects) | ci.yml | PR events |
+| CodeQL analysis | codeql.yml | Push, PR, scheduled |
+| OpenSSF Scorecard | scorecard.yml | Scheduled |
+| Dependency review | dependency-review.yml | PR events |
 
-| Workflow | Cron | What it syncs |
-|----------|------|---------------|
-| `sync-repo-settings.yml` | `0 */3 * * *` | Workflows, Dependabot, labels, templates, AGENTS.md, secrets |
-| `sync-mcp.yml` | `20 */3 * * *` | MCP config cleanup + gitignore injection |
-| `sync-skills.yml` | `40 */3 * * *` | Dot folder cleanup, skills removal, gitignore injection |
+## D. Security and Performance
 
-## Features (detailed)
+**Security Measures:**
+- TruffleHog scans every push and PR for leaked secrets (blocks merge on detection)
+- CodeQL static analysis for code vulnerabilities
+- All secrets managed via GitHub Encrypted Secrets (never in source)
+- Dependabot + auto-merge ensures dependencies stay current
 
-### `sync-selected-paths.sh`
-- Queries GitHub API for all owned repos (non-archived, non-fork)
-- For each repo: checks out, copies target paths, commits+pushes if changed
-- Uses GITHUB_TOKEN for authentication
+**Performance Optimizations:**
+- Staggered crons (0/20/40 minutes) reduce GitHub API rate limit pressure
+- Shallow clones (--depth 1) for target repos minimize network transfer
+- Exponential backoff retry (3 attempts) handles transient failures
+- PR fallback on push failure ensures no sync is silently lost
 
-### Repo Discovery
-- GitHub API: `GET /user/repos?type=owner&archived=false`
-- Filters: `fork == false`, `archived == false`
+## E. Non-Functional Requirements
 
-### Config Pushed
-- `.github/workflows/` — standard reusable workflows
-- `.github/dependabot.yml` — automated dependency updates
-- `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`
-- `AGENTS.md` — agent instructions
-- `.gitignore` additions — standard ignores
-- Skills and dot folder removal rules
+**Error Handling:**
+- set -euo pipefail in bash script — immediate exit on any unhandled error
+- Failed clones and pushes tracked in arrays, reported at end of run
+- Push failures trigger PR creation as fallback
 
-## Deployment / Run
-Runs automatically via GitHub Actions cron. To trigger manually:
-- Push to `sourcerepo` main branch
-- Or use GitHub Actions "Run workflow" button
+**Logging:**
+- Unstructured echo-based logging to GitHub Actions job output
+- Per-repo processing status logged (Skipping/Processing/Pushed/No changes)
+- Clone and push failure lists printed at run completion
 
-## Constraints & Notes
-- **GITHUB_TOKEN scope**: needs `repo` scope to push to other repos
-- **Rate limits**: staggered crons (0/20/40 min) reduce GitHub API pressure
-- **New repos**: picked up automatically within 3 hours of creation
-- **skills-lock.json**: pins agent skill versions for consistency across repos
