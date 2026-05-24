@@ -136,7 +136,6 @@ jobs:
         .github/workflows/greetings.yml|.github/workflows/greetings.yml
         .github/FUNDING.yml|.github/FUNDING.yml
         AGENTS.md|AGENTS.md
-        .github/workflows/stale.yml|.github/workflows/stale.yml
       COMMIT_MESSAGE: |
         feat(config): Standardize general configurations synced from source repo
       PR_TITLE: |
