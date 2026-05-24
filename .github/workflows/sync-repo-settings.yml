@@ -12,7 +12,7 @@ on:
       - '.github/dependabot_config.yml'
   workflow_dispatch:
   schedule:
-    - cron: "0 */3 * * *"
+    - cron: "0 9 * * 1" # Weekly Monday 5pm SGT (saves Actions minutes)
 jobs:
   configure-repo-settings:
     runs-on: ubuntu-latest

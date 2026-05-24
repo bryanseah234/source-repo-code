@@ -7,7 +7,7 @@ on:
       - '.github/scripts/sync-selected-paths.sh'
   workflow_dispatch:
   schedule:
-    - cron: "20 */3 * * *"
+    - cron: "20 9 * * 1" # Weekly Monday 5:20pm SGT
 jobs:
   force-sync-mcp:
     runs-on: ubuntu-latest
