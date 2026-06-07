@@ -166,4 +166,5 @@ jobs:
           echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > last_sync.txt
           git add last_sync.txt
           git diff --cached --quiet || git commit -m "chore: sync heartbeat [skip ci]"
+          git pull --rebase
           git push
