@@ -1,14 +1,20 @@
 name: Sync Repo Settings & General Config to All Repos
 
-# COST-OPTIMISED (2026-07-04):
+# COST-OPTIMISED (2026-07-04) + INCLUDES-ARCHIVED (2026-07-06):
 # - Removed `push` trigger — every workflow edit was re-running the full 90-repo
 #   sync, which then triggered every workflow in every target repo (cascade).
 #   Now the sync only runs on the weekly schedule or when manually dispatched.
 # - Added `concurrency` to prevent overlapping runs stacking up.
-# - Slim heartbeat commit stays but no longer fans out here (a single dedicated
-#   heartbeat workflow handles that on the schedule).
+# - **Now processes archived repos too** by temporarily unarchiving → applying
+#   changes → re-archiving. Disabled repos are still skipped (they cannot
+#   accept API writes at all).
 on:
   workflow_dispatch:
+    inputs:
+      include_archived:
+        description: "Include archived repos (unarchive → sync → re-archive)"
+        type: boolean
+        default: true
   schedule:
     - cron: "0 9 * * 1" # Weekly Monday 5pm SGT
 
@@ -19,6 +25,10 @@ concurrency:
 permissions:
   contents: write
 
+env:
+  # Weekly schedule always includes archived. Manual runs use the input flag.
+  INCLUDE_ARCHIVED: ${{ github.event_name == 'schedule' && 'true' || inputs.include_archived }}
+
 jobs:
   configure-repo-settings:
     runs-on: ubuntu-latest
@@ -28,6 +38,7 @@ jobs:
           github-token: ${{ secrets.GH_PAT }}
           script: |
             const owner = '${{ github.repository_owner }}';
+            const includeArchived = ${{ env.INCLUDE_ARCHIVED }} === true || '${{ env.INCLUDE_ARCHIVED }}' === 'true';
             const maxRetries = 3;
             const retryStatuses = new Set([429, 500, 502, 503, 504]);
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -54,14 +65,25 @@ jobs:
                 affiliation: 'owner'
               })
             );
-            console.log(`Found ${repos.length} repositories to configure`);
+            console.log(`Found ${repos.length} repositories; includeArchived=${includeArchived}`);
             const failures = [];
             for (const repo of repos) {
-              if (repo.archived || repo.disabled) {
-                console.log(`Skipping archived or disabled repo: ${repo.name}`);
+              if (repo.disabled) {
+                console.log(`Skipping disabled repo: ${repo.name}`);
                 continue;
               }
+              if (repo.archived && !includeArchived) {
+                console.log(`Skipping archived repo (per input): ${repo.name}`);
+                continue;
+              }
+              const wasArchived = repo.archived;
               try {
+                if (wasArchived) {
+                  console.log(`Temporarily unarchiving: ${repo.name}`);
+                  await withRetry(() =>
+                    github.rest.repos.update({ owner, repo: repo.name, archived: false })
+                  );
+                }
                 console.log(`Configuring settings for: ${repo.name}`);
                 const isTheprawn = repo.name.toLowerCase().includes('theprawn');
                 await withRetry(() =>
@@ -90,6 +112,18 @@ jobs:
               } catch (error) {
                 console.log(`❌ Failed to configure ${repo.name}: ${error.message}`);
                 failures.push(repo.name);
+              } finally {
+                if (wasArchived) {
+                  try {
+                    await withRetry(() =>
+                      github.rest.repos.update({ owner, repo: repo.name, archived: true })
+                    );
+                    console.log(`🔒 Re-archived: ${repo.name}`);
+                  } catch (e) {
+                    console.log(`⚠️  Failed to re-archive ${repo.name}: ${e.message} — DO THIS MANUALLY`);
+                    failures.push(`${repo.name} (re-archive failed)`);
+                  }
+                }
               }
             }
             if (failures.length > 0) {
@@ -107,9 +141,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y gh
       - name: Authenticate gh CLI
         run: echo "${GH_PAT}" | gh auth login --with-token
-      - name: Set GH_PAT secret in all repos
+      - name: Set GH_PAT secret in all repos (including archived)
         run: |
-          gh api --paginate "user/repos?per_page=100&affiliation=owner" --jq '.[] | select(.archived==false and .disabled==false) | .full_name' \
+          # gh secret set works on archived repos without needing to unarchive.
+          gh api --paginate "user/repos?per_page=100&affiliation=owner" --jq '.[] | select(.disabled==false) | .full_name' \
           | while IFS= read -r repo; do
               echo "$GH_PAT" | gh secret set GH_PAT --repo "$repo" && echo "Set GH_PAT: $repo" || echo "Failed: $repo"
             done
@@ -119,6 +154,7 @@ jobs:
     needs: propagate-secrets
     env:
       GH_PAT: ${{ secrets.GH_PAT }}
+      INCLUDE_ARCHIVED: ${{ github.event_name == 'schedule' && 'true' || inputs.include_archived }}
       # NOTE: All target-repo commits are made with `[skip ci]` in the message
       # so they do NOT fan-out and trigger CI/CodeQL/Scorecard in every downstream
       # repo. This was the biggest single source of Actions-minute waste.

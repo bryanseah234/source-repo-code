@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# INCLUDE_ARCHIVED flag comes from the calling workflow. Default true so a
+# direct manual invocation of this script hits every non-disabled repo.
+INCLUDE_ARCHIVED="${INCLUDE_ARCHIVED:-true}"
+
 git config --global user.email "actions@github.com"
 git config --global user.name "GitHub Actions Sync"
 
@@ -10,6 +14,7 @@ WORKDIR="$(pwd)"
 SYNC_ROOT="$(mktemp -d)"
 FAILED_REPOS=()
 PUSH_FAILED_REPOS=()
+REARCHIVE_FAILED_REPOS=()
 
 # Dot files/folders that are NEVER deleted from target repos
 EXEMPT_DOTS=(
@@ -69,7 +74,6 @@ force_stage_path() {
   fi
 }
 
-# Delete all dot items at repo root that are not on the exemption list
 delete_unlisted_dot_items() {
   for item in .[!.]* ; do
     [ -e "$item" ] || continue
@@ -84,12 +88,10 @@ delete_unlisted_dot_items() {
   done
 }
 
-# Delete all *.code-workspace files recursively (skip .git/)
 delete_code_workspace_files() {
   find . -path "./.git" -prune -o -name "*.code-workspace" -print -exec rm -f {} \;
 }
 
-# Inject .gitignore entries — idempotent, uses broad .* pattern with exemptions
 inject_gitignore_entries() {
   if grep -qF "$GITIGNORE_MARKER" .gitignore 2>/dev/null; then
     return
@@ -129,9 +131,22 @@ GITIGNORE_BLOCK
   echo "Updated .gitignore with dot directory exclusions"
 }
 
+# Unarchive a repo (returns 0 on success, non-zero on failure)
+unarchive_repo() {
+  local full_name="$1"
+  gh api -X PATCH "repos/$full_name" -f archived=false >/dev/null
+}
+
+# Re-archive a repo
+rearchive_repo() {
+  local full_name="$1"
+  gh api -X PATCH "repos/$full_name" -f archived=true >/dev/null
+}
+
 REPOS_JSON="$(gh api --paginate "user/repos?per_page=100&affiliation=owner" | jq -s 'add')"
 echo "Owner: $OWNER"
 echo "Source repo: $SOURCE_REPO_NAME"
+echo "Include archived: $INCLUDE_ARCHIVED"
 echo "Found repos: $(echo "$REPOS_JSON" | jq length)"
 
 while read -r repo; do
@@ -140,9 +155,16 @@ while read -r repo; do
   DISABLED="$(echo "$repo" | jq -r '.disabled')"
   FORKED="$(echo "$repo" | jq -r '.fork')"
   DEFAULT_BRANCH="$(echo "$repo" | jq -r '.default_branch')"
+  FULL_NAME="$OWNER/$REPO_NAME"
 
-  if [ "$ARCHIVED" = "true" ] || [ "$DISABLED" = "true" ] || [ "$FORKED" = "true" ]; then
-    echo "Skipping repo: $REPO_NAME"
+  # Disabled repos still cannot be interacted with (different from archived).
+  if [ "$DISABLED" = "true" ] || [ "$FORKED" = "true" ]; then
+    echo "Skipping repo: $REPO_NAME (disabled=$DISABLED fork=$FORKED)"
+    continue
+  fi
+
+  if [ "$ARCHIVED" = "true" ] && [ "$INCLUDE_ARCHIVED" != "true" ]; then
+    echo "Skipping archived repo (per flag): $REPO_NAME"
     continue
   fi
 
@@ -151,37 +173,55 @@ while read -r repo; do
     continue
   fi
 
+  # Temporarily unarchive so we can push to it.
+  UNARCHIVED_HERE=false
+  if [ "$ARCHIVED" = "true" ]; then
+    echo "Temporarily unarchiving $FULL_NAME..."
+    if unarchive_repo "$FULL_NAME"; then
+      UNARCHIVED_HERE=true
+    else
+      echo "Failed to unarchive $FULL_NAME — skipping"
+      FAILED_REPOS+=("$REPO_NAME")
+      continue
+    fi
+  fi
+
   TARGET_DIR="$SYNC_ROOT/$REPO_NAME"
   echo "Processing $REPO_NAME..."
 
-  if ! retry gh repo clone "$OWNER/$REPO_NAME" "$TARGET_DIR" -- --depth 1; then
-    echo "Failed to clone $OWNER/$REPO_NAME, skipping."
+  if ! retry gh repo clone "$FULL_NAME" "$TARGET_DIR" -- --depth 1; then
+    echo "Failed to clone $FULL_NAME, skipping."
     FAILED_REPOS+=("$REPO_NAME")
+    # Restore archive state before continuing
+    if [ "$UNARCHIVED_HERE" = "true" ]; then
+      rearchive_repo "$FULL_NAME" || REARCHIVE_FAILED_REPOS+=("$REPO_NAME")
+    fi
     continue
   fi
 
   cd "$TARGET_DIR" || {
     FAILED_REPOS+=("$REPO_NAME")
+    if [ "$UNARCHIVED_HERE" = "true" ]; then
+      rearchive_repo "$FULL_NAME" || REARCHIVE_FAILED_REPOS+=("$REPO_NAME")
+    fi
+    cd "$WORKDIR" || exit 1
     continue
   }
 
-  # Copy skills content from sourcerepo
+  # Copy content from sourcerepo
   while IFS='|' read -r src dst; do
     [ -z "$src" ] && continue
     copy_if_exists "$WORKDIR/$src" "$dst"
     force_stage_path "$dst"
   done <<< "$SYNC_ITEMS"
 
-  # Clean up dot items and .code-workspace files
   delete_unlisted_dot_items
   delete_code_workspace_files
 
-  # Remove AI tool / generated dirs from git tracking
   for item in skills skills-lock.json docs templates; do
     [ -e "$item" ] && rm -rf "$item" && echo "Removed: $item"
   done
 
-  # Inject .gitignore entries (idempotent)
   inject_gitignore_entries
 
   git add -A
@@ -194,7 +234,7 @@ while read -r repo; do
       SYNC_BRANCH="sync-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
       git checkout -b "$SYNC_BRANCH"
       if git push origin "$SYNC_BRANCH"; then
-        gh pr create --repo "$OWNER/$REPO_NAME" --title "$PR_TITLE" --body "$PR_BODY" --base "$DEFAULT_BRANCH" --head "$SYNC_BRANCH" || true
+        gh pr create --repo "$FULL_NAME" --title "$PR_TITLE" --body "$PR_BODY" --base "$DEFAULT_BRANCH" --head "$SYNC_BRANCH" || true
         echo "Opened PR for $REPO_NAME"
       else
         echo "Push failed for $REPO_NAME"
@@ -207,11 +247,25 @@ while read -r repo; do
 
   cd "$WORKDIR" || exit 1
   rm -rf "$TARGET_DIR"
+
+  # Restore archive state
+  if [ "$UNARCHIVED_HERE" = "true" ]; then
+    echo "Re-archiving $FULL_NAME..."
+    if ! rearchive_repo "$FULL_NAME"; then
+      echo "⚠️  Failed to re-archive $FULL_NAME — DO THIS MANUALLY"
+      REARCHIVE_FAILED_REPOS+=("$REPO_NAME")
+    fi
+  fi
 done < <(echo "$REPOS_JSON" | jq -c '.[] | {name, archived, disabled, fork, default_branch}')
 
 if [ "${#FAILED_REPOS[@]}" -gt 0 ]; then
-  echo "Clone failures: ${FAILED_REPOS[*]}"
+  echo "Clone/unarchive failures: ${FAILED_REPOS[*]}"
 fi
 if [ "${#PUSH_FAILED_REPOS[@]}" -gt 0 ]; then
   echo "Push failures: ${PUSH_FAILED_REPOS[*]}"
+fi
+if [ "${#REARCHIVE_FAILED_REPOS[@]}" -gt 0 ]; then
+  echo "⚠️  RE-ARCHIVE FAILURES (manual action required): ${REARCHIVE_FAILED_REPOS[*]}"
+  # Exit non-zero to surface this loudly in the Actions UI.
+  exit 1
 fi
