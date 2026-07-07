@@ -1,0 +1,46 @@
+name: LFS Guard
+
+# LFS ACCIDENT PREVENTION (2026-07-07):
+# Fails any push or PR that adds Git LFS pointer files. The 3-repo LFS
+# cleanup (pokemoncards 11.6 GB, nusnetID2021 210 MB, sgWerkzPhotography2021
+# 75 MB) is expensive to undo — this guard blocks new occurrences at the
+# source. Override for a specific repo by adding a `no-lfs-guard` topic
+# in the repo's About page or by removing this workflow via .gitignore.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: lfs-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: read-all
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan for LFS pointer files
+        shell: bash
+        run: |
+          set -e
+          # A Git LFS pointer file starts with `version https://git-lfs.github.com/spec/v1`
+          # and is small (< 200 bytes). Grep for the sentinel line across HEAD.
+          POINTERS=$(git grep -l --cached "^version https://git-lfs.github.com/spec/v1" -- '*' || true)
+          if [ -n "$POINTERS" ]; then
+            echo "::error::Git LFS pointer files detected in HEAD."
+            echo "Files:"
+            echo "$POINTERS"
+            echo ""
+            echo "This repository uses the sourcerepo prevention policy — no LFS."
+            echo "Fix: remove the file (git rm) or store it externally (S3/R2/CDN)."
+            echo "If LFS is genuinely required for this file type in this repo,"
+            echo "override .gitattributes locally and delete this workflow."
+            exit 1
+          fi
+          echo "✅ No LFS pointer files found."
