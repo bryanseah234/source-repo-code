@@ -208,12 +208,39 @@ while read -r repo; do
     continue
   }
 
+  # ── Per-repo opt-out via GitHub topics ────────────────────────────────
+  # Repos can opt out of specific sync items by setting topics:
+  #   • `keep-lfs`      → skip .gitattributes overwrite + skip lfs-guard.yml
+  #                       (repo legitimately needs Git LFS)
+  #   • `no-config-sync`→ skip ALL config sync for this repo (opt out entirely,
+  #                       but repo still gets settings + secrets from other jobs)
+  # Set with: gh repo edit <owner>/<repo> --add-topic keep-lfs
+  REPO_TOPICS="$(gh api "repos/$FULL_NAME/topics" --jq '.names | join(",")' 2>/dev/null || echo "")"
+  echo "Topics: ${REPO_TOPICS:-none}"
+
+  if [[ ",$REPO_TOPICS," == *",no-config-sync,"* ]]; then
+    echo "Skipping all config sync for $REPO_NAME (topic: no-config-sync)"
+    cd "$WORKDIR" || exit 1
+    rm -rf "$TARGET_DIR"
+    if [ "$UNARCHIVED_HERE" = "true" ]; then
+      rearchive_repo "$FULL_NAME" || REARCHIVE_FAILED_REPOS+=("$REPO_NAME")
+    fi
+    continue
+  fi
+
+  # Filter SYNC_ITEMS if repo opted out of LFS enforcement.
+  EFFECTIVE_SYNC_ITEMS="$SYNC_ITEMS"
+  if [[ ",$REPO_TOPICS," == *",keep-lfs,"* ]]; then
+    echo "Skipping LFS-related items for $REPO_NAME (topic: keep-lfs)"
+    EFFECTIVE_SYNC_ITEMS="$(echo "$SYNC_ITEMS" | grep -v -E '\.gitattributes|lfs-guard\.yml' || true)"
+  fi
+
   # Copy content from sourcerepo
   while IFS='|' read -r src dst; do
     [ -z "$src" ] && continue
     copy_if_exists "$WORKDIR/$src" "$dst"
     force_stage_path "$dst"
-  done <<< "$SYNC_ITEMS"
+  done <<< "$EFFECTIVE_SYNC_ITEMS"
 
   delete_unlisted_dot_items
   delete_code_workspace_files
