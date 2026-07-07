@@ -183,6 +183,7 @@ jobs:
         .github/FUNDING.yml|.github/FUNDING.yml
         AGENTS.md|AGENTS.md
         .github/workflows/heartbeat.yml|.github/workflows/heartbeat.yml
+        .github/workflows/lfs-guard.yml|.github/workflows/lfs-guard.yml
       COMMIT_MESSAGE: |
         chore(config): sync from sourcerepo [skip ci]
       PR_TITLE: |
