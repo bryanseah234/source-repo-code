@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0  # CRITICAL: Full history for scanning
 
@@ -54,7 +54,7 @@ jobs:
 ### 2. Action Version Management
 
 **Always use specific versions:**
-- `actions/checkout@v6` (latest stable)
+- `actions/checkout@v7` (latest stable)
 - `trufflesecurity/trufflehog@v3.63.2` (latest stable)
 
 **Never use:**
@@ -66,10 +66,10 @@ jobs:
 **Issue: TruffleHog fails with "configuration error"**
 ```yaml
 # ❌ WRONG - Missing fetch-depth
-- uses: actions/checkout@v6
+- uses: actions/checkout@v7
 
 # ✅ CORRECT - Full history
-- uses: actions/checkout@v6
+- uses: actions/checkout@v7
   with:
     fetch-depth: 0
 ```
