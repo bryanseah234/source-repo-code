@@ -74,6 +74,47 @@ force_stage_path() {
   fi
 }
 
+case_conflicting_paths() {
+  local dst="$1"
+  local lower_dst
+  lower_dst="$(printf '%s' "$dst" | tr '[:upper:]' '[:lower:]')"
+  while IFS= read -r path; do
+    local lower_path
+    lower_path="$(printf '%s' "$path" | tr '[:upper:]' '[:lower:]')"
+    if [ "$lower_path" = "$lower_dst" ] && [ "$path" != "$dst" ]; then
+      printf '%s\n' "$path"
+    fi
+  done < <(git ls-files)
+}
+
+remove_case_conflicts_for() {
+  local dst="$1"
+  local conflicts=()
+  mapfile -t conflicts < <(case_conflicting_paths "$dst")
+  for path in "${conflicts[@]}"; do
+    echo "Removing case-conflicting tracked path: $path (canonical: $dst)"
+    git rm -f --cached -- "$path" >/dev/null 2>&1 || true
+    rm -f -- "$path" 2>/dev/null || true
+  done
+}
+
+should_skip_case_conflicting_sync() {
+  local dst="$1"
+  local conflicts=()
+  mapfile -t conflicts < <(case_conflicting_paths "$dst")
+  [ "${#conflicts[@]}" -eq 0 ] && return 1
+
+  case "$dst" in
+    AGENTS.md)
+      echo "Skipping AGENTS.md sync because target has case-conflicting repo-specific file(s): ${conflicts[*]}"
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 delete_unlisted_dot_items() {
   for item in .[!.]* ; do
     [ -e "$item" ] || continue
@@ -238,6 +279,10 @@ while read -r repo; do
   # Copy content from sourcerepo
   while IFS='|' read -r src dst; do
     [ -z "$src" ] && continue
+    if should_skip_case_conflicting_sync "$dst"; then
+      continue
+    fi
+    remove_case_conflicts_for "$dst"
     copy_if_exists "$WORKDIR/$src" "$dst"
     force_stage_path "$dst"
   done <<< "$EFFECTIVE_SYNC_ITEMS"
