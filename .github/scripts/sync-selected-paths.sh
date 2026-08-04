@@ -287,6 +287,23 @@ while read -r repo; do
     force_stage_path "$dst"
   done <<< "$EFFECTIVE_SYNC_ITEMS"
 
+  # ── Per-repo heartbeat cron staggering (added 2026-08-04) ─────────────
+  # All ~60 private repos previously shared the same Monday 09:00 UTC cron,
+  # which fired concurrent heartbeat runners in a burst and wasted queue
+  # time. Rewrite the cron minute to a stable hash-derived value in
+  # [0, 59] so the load spreads across the whole hour. Deterministic in
+  # repo name so re-syncs don't churn the file.
+  HEARTBEAT_YML=".github/workflows/heartbeat.yml"
+  if [ -f "$HEARTBEAT_YML" ]; then
+    MINUTE=$(( 0x$(printf '%s' "$REPO_NAME" | md5sum | cut -c1-2) % 60 ))
+    # Only rewrite the exact literal source line to avoid clobbering other crons.
+    if grep -qE '^ *- cron: "0 9 \* \* 1"' "$HEARTBEAT_YML"; then
+      sed -i -E "s|^( *- cron: \")0( 9 \\* \\* 1\")|\\1${MINUTE}\\2|" "$HEARTBEAT_YML"
+      echo "Staggered heartbeat cron to minute=${MINUTE} for ${REPO_NAME}"
+      force_stage_path "$HEARTBEAT_YML"
+    fi
+  fi
+
   delete_unlisted_dot_items
   delete_code_workspace_files
 
