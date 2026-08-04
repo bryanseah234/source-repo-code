@@ -85,12 +85,19 @@ jobs:
                   );
                 }
                 console.log(`Configuring settings for: ${repo.name}`);
-                const isTheprawn = repo.name.toLowerCase().includes('theprawn');
+                // POLICY CHANGE (2026-08-04):
+                // Visibility is intentionally NOT set here — it's owner-managed.
+                // The previous `private: !isTheprawn` line auto-flipped every
+                // non-theprawn repo back to private on every sync, which meant
+                // any manual `gh repo edit --visibility public` got reverted
+                // the following Monday. Free Actions minutes on public repos
+                // (unlimited on GitHub-hosted standard runners) were being
+                // burned instead. Use `gh repo edit <owner>/<repo>
+                // --visibility public|private` to change visibility.
                 await withRetry(() =>
                   github.rest.repos.update({
                     owner,
                     repo: repo.name,
-                    private: !isTheprawn,
                     description: "Give me 1 ⭐ if it's cool.",
                     homepage: "https://www.hong-yi.me",
                     has_issues: true,
