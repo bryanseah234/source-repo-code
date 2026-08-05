@@ -183,7 +183,7 @@ rearchive_repo() {
   gh api -X PATCH "repos/$full_name" -f archived=true >/dev/null
 }
 
-REPOS_JSON="$(gh api --paginate "user/repos?per_page=100&affiliation=owner" | jq -s 'add')"
+REPOS_JSON="$(gh api --paginate "orgs/hongyime/repos?per_page=100" | jq -s 'add')"
 echo "Owner: $OWNER"
 echo "Source repo: $SOURCE_REPO_NAME"
 echo "Include archived: $INCLUDE_ARCHIVED"
