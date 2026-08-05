@@ -59,13 +59,24 @@ jobs:
               }
               throw lastError;
             };
-            const repos = await withRetry(() =>
+            const orgRepos = await withRetry(() =>
               github.paginate(github.rest.repos.listForOrg, {
                 org: 'hongyime',
                 per_page: 100
               })
             );
-            console.log(`Found ${repos.length} repositories; includeArchived=${includeArchived}`);
+            // Also include personal-account repos (direct owner, not org).
+            // Excludes forks and collaborator repos.
+            const personalRepos = await withRetry(() =>
+              github.paginate(github.rest.repos.listForAuthenticatedUser, {
+                per_page: 100,
+                affiliation: 'owner',
+                type: 'owner'
+              })
+            );
+            const personalOnly = personalRepos.filter(r => r.owner.login !== 'hongyime' && !r.fork);
+            const repos = [...orgRepos, ...personalOnly];
+            console.log(`Found ${orgRepos.length} org repos + ${personalOnly.length} personal repos = ${repos.length} total; includeArchived=${includeArchived}`);
             const failures = [];
             for (const repo of repos) {
               if (repo.disabled) {
@@ -77,14 +88,15 @@ jobs:
                 continue;
               }
               const wasArchived = repo.archived;
+              const repoOwner = repo.owner.login;
               try {
                 if (wasArchived) {
-                  console.log(`Temporarily unarchiving: ${repo.name}`);
+                  console.log(`Temporarily unarchiving: ${repoOwner}/${repo.name}`);
                   await withRetry(() =>
-                    github.rest.repos.update({ owner, repo: repo.name, archived: false })
+                    github.rest.repos.update({ owner: repoOwner, repo: repo.name, archived: false })
                   );
                 }
-                console.log(`Configuring settings for: ${repo.name}`);
+                console.log(`Configuring settings for: ${repoOwner}/${repo.name}`);
                 // POLICY CHANGE (2026-08-04):
                 // Visibility is intentionally NOT set here — it's owner-managed.
                 // The previous `private: !isTheprawn` line auto-flipped every
@@ -96,7 +108,7 @@ jobs:
                 // --visibility public|private` to change visibility.
                 await withRetry(() =>
                   github.rest.repos.update({
-                    owner,
+                    owner: repoOwner,
                     repo: repo.name,
                     description: "Give me 1 ⭐ if it's cool.",
                     homepage: "https://www.hong-yi.me",
@@ -115,19 +127,19 @@ jobs:
                     has_pages: false
                   })
                 );
-                console.log(`✅ Successfully configured settings for: ${repo.name}`);
+                console.log(`✅ Successfully configured settings for: ${repoOwner}/${repo.name}`);
               } catch (error) {
-                console.log(`❌ Failed to configure ${repo.name}: ${error.message}`);
-                failures.push(repo.name);
+                console.log(`❌ Failed to configure ${repoOwner}/${repo.name}: ${error.message}`);
+                failures.push(`${repoOwner}/${repo.name}`);
               } finally {
                 if (wasArchived) {
                   try {
                     await withRetry(() =>
-                      github.rest.repos.update({ owner, repo: repo.name, archived: true })
+                      github.rest.repos.update({ owner: repoOwner, repo: repo.name, archived: true })
                     );
-                    console.log(`🔒 Re-archived: ${repo.name}`);
+                    console.log(`🔒 Re-archived: ${repoOwner}/${repo.name}`);
                   } catch (e) {
-                    console.log(`⚠️  Failed to re-archive ${repo.name}: ${e.message} — DO THIS MANUALLY`);
+                    console.log(`⚠️  Failed to re-archive ${repoOwner}/${repo.name}: ${e.message} — DO THIS MANUALLY`);
                     failures.push(`${repo.name} (re-archive failed)`);
                   }
                 }
@@ -151,7 +163,14 @@ jobs:
       - name: Set GH_PAT secret in all repos (including archived)
         run: |
           # gh secret set works on archived repos without needing to unarchive.
-          gh api --paginate "orgs/hongyime/repos?per_page=100" --jq '.[] | select(.disabled==false) | .full_name' \
+          # Combine hongyime org repos AND personal-account repos (direct owner).
+          # Personal repos live under bryanseah234/* — currently just the profile
+          # README repo + the .github.io Pages site — but any future personal
+          # repos will get swept up too.
+          { \
+            gh api --paginate "orgs/hongyime/repos?per_page=100" --jq '.[] | select(.disabled==false) | .full_name'; \
+            gh api --paginate "user/repos?per_page=100&affiliation=owner&type=owner" --jq '.[] | select(.disabled==false and .fork==false and (.owner.login != "hongyime")) | .full_name'; \
+          } | sort -u \
           | while IFS= read -r repo; do
               echo "$GH_PAT" | gh secret set GH_PAT --repo "$repo" && echo "Set GH_PAT: $repo" || echo "Failed: $repo"
             done

@@ -16,6 +16,15 @@ FAILED_REPOS=()
 PUSH_FAILED_REPOS=()
 REARCHIVE_FAILED_REPOS=()
 
+# Combined repo list: hongyime org repos + personal-account owned repos.
+# Personal repos are the profile README + Pages site (kept on bryanseah234
+# because GitHub's magic profile/pages only render at the matching username
+# path). Any future personal-account repos are picked up automatically.
+REPOS_JSON="$( { \
+  gh api --paginate "orgs/hongyime/repos?per_page=100"; \
+  gh api --paginate "user/repos?per_page=100&affiliation=owner&type=owner"; \
+  } | jq -s 'add | unique_by(.full_name) | map(select(.disabled == false and .fork == false))')"
+
 # Dot files/folders that are NEVER deleted from target repos
 EXEMPT_DOTS=(
   ".git" ".github" ".gitignore" ".gitattributes" ".gitmodules"
@@ -183,7 +192,7 @@ rearchive_repo() {
   gh api -X PATCH "repos/$full_name" -f archived=true >/dev/null
 }
 
-REPOS_JSON="$(gh api --paginate "orgs/hongyime/repos?per_page=100" | jq -s 'add')"
+REPOS_JSON="$REPOS_JSON"
 echo "Owner: $OWNER"
 echo "Source repo: $SOURCE_REPO_NAME"
 echo "Include archived: $INCLUDE_ARCHIVED"
@@ -191,11 +200,12 @@ echo "Found repos: $(echo "$REPOS_JSON" | jq length)"
 
 while read -r repo; do
   REPO_NAME="$(echo "$repo" | jq -r '.name')"
+  REPO_OWNER="$(echo "$repo" | jq -r '.owner.login')"
   ARCHIVED="$(echo "$repo" | jq -r '.archived')"
   DISABLED="$(echo "$repo" | jq -r '.disabled')"
   FORKED="$(echo "$repo" | jq -r '.fork')"
   DEFAULT_BRANCH="$(echo "$repo" | jq -r '.default_branch')"
-  FULL_NAME="$OWNER/$REPO_NAME"
+  FULL_NAME="$REPO_OWNER/$REPO_NAME"
 
   # Disabled repos still cannot be interacted with (different from archived).
   if [ "$DISABLED" = "true" ] || [ "$FORKED" = "true" ]; then
@@ -355,7 +365,7 @@ while read -r repo; do
       REARCHIVE_FAILED_REPOS+=("$REPO_NAME")
     fi
   fi
-done < <(echo "$REPOS_JSON" | jq -c '.[] | {name, archived, disabled, fork, default_branch}')
+done < <(echo "$REPOS_JSON" | jq -c '.[] | {name, archived, disabled, fork, default_branch, owner}')
 
 if [ "${#FAILED_REPOS[@]}" -gt 0 ]; then
   echo "Clone/unarchive failures: ${FAILED_REPOS[*]}"
