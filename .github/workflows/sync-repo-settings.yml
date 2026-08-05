@@ -60,9 +60,9 @@ jobs:
               throw lastError;
             };
             const repos = await withRetry(() =>
-              github.paginate(github.rest.repos.listForAuthenticatedUser, {
-                per_page: 100,
-                affiliation: 'owner'
+              github.paginate(github.rest.repos.listForOrg, {
+                org: 'hongyime',
+                per_page: 100
               })
             );
             console.log(`Found ${repos.length} repositories; includeArchived=${includeArchived}`);
@@ -151,7 +151,7 @@ jobs:
       - name: Set GH_PAT secret in all repos (including archived)
         run: |
           # gh secret set works on archived repos without needing to unarchive.
-          gh api --paginate "user/repos?per_page=100&affiliation=owner" --jq '.[] | select(.disabled==false) | .full_name' \
+          gh api --paginate "orgs/hongyime/repos?per_page=100" --jq '.[] | select(.disabled==false) | .full_name' \
           | while IFS= read -r repo; do
               echo "$GH_PAT" | gh secret set GH_PAT --repo "$repo" && echo "Set GH_PAT: $repo" || echo "Failed: $repo"
             done
