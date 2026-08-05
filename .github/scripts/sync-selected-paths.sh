@@ -167,7 +167,6 @@ inject_gitignore_entries() {
 skills/
 skills-lock.json
 docs/
-templates/
 GITIGNORE_BLOCK
   echo "Updated .gitignore with dot directory exclusions"
 }
@@ -307,7 +306,18 @@ while read -r repo; do
   delete_unlisted_dot_items
   delete_code_workspace_files
 
-  for item in skills skills-lock.json docs templates; do
+  # ── Cleanup of sourcerepo-only artifacts ──────────────────────────────
+  # We remove `skills`, `skills-lock.json`, `docs` because those live in
+  # sourcerepo but must NOT be copied into downstream repos (they're
+  # per-agent-tool caches / manifests, not app code).
+  #
+  # DO NOT add `templates` here. Some downstream repos are Flask apps
+  # whose `templates/` directory is the app's own Jinja templates
+  # (findabus.html, index.html, etc.). Sweeping them broke sgbuslaobu +
+  # validatenric production 500s until commit e69a823/f292e0b restored
+  # them from git history (2026-08-05). If skills-related templates need
+  # exclusion, they're already scoped under `skills/` above.
+  for item in skills skills-lock.json docs; do
     [ -e "$item" ] && rm -rf "$item" && echo "Removed: $item"
   done
 
