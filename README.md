@@ -61,8 +61,8 @@ Set a topic on a specific repo to change its sync behavior. Topics survive acros
 
 Via CLI:
 ```bash
-gh repo edit bryanseah234/<repo> --add-topic keep-lfs
-gh repo edit bryanseah234/<repo> --add-topic no-config-sync
+gh repo edit hongyime/<repo> --add-topic keep-lfs
+gh repo edit hongyime/<repo> --add-topic no-config-sync
 ```
 
 Via UI: repo page → click gear icon next to **About** → Topics field → add → save.
@@ -70,7 +70,7 @@ Via UI: repo page → click gear icon next to **About** → Topics field → add
 ### Removing a topic
 
 ```bash
-gh repo edit bryanseah234/<repo> --remove-topic keep-lfs
+gh repo edit hongyime/<repo> --remove-topic keep-lfs
 ```
 
 Or via UI, same location.
@@ -112,12 +112,12 @@ Bot PRs merge automatically. Both workflows use `GH_PAT` with `--admin` to bypas
 
 Sync now (all repos including archived):
 ```bash
-gh workflow run "Sync Repo Settings & General Config to All Repos" --repo bryanseah234/sourcerepo -f include_archived=true
+gh workflow run "Sync Repo Settings & General Config to All Repos" --repo hongyime/sourcerepo -f include_archived=true
 ```
 
 Merge all open bot PRs across account:
 ```bash
-gh workflow run "Auto-merge Bot PRs" --repo bryanseah234/sourcerepo
+gh workflow run "Auto-merge Bot PRs" --repo hongyime/sourcerepo
 ```
 
 ## Local sync (X: drive)
