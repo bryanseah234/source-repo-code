@@ -33,10 +33,49 @@ jobs:
   configure-repo-settings:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v7
+      - name: Convert repo metadata map to JSON
+        shell: bash
+        run: |
+          ruby -ryaml -rjson -e '
+            path = "repos.yml"
+            unless File.exist?(path)
+              File.write(".github/repos.generated.json", JSON.pretty_generate({}))
+              exit
+            end
+
+            raw = YAML.safe_load(
+              File.read(path),
+              permitted_classes: [],
+              permitted_symbols: [],
+              aliases: false
+            ) || {}
+
+            repos = raw.key?("repos") ? raw["repos"] : raw
+            unless repos.is_a?(Hash)
+              raise "repos.yml must be a mapping of full repo names to settings"
+            end
+
+            out = {}
+            repos.each do |full_name, settings|
+              next unless full_name.is_a?(String)
+              next unless settings.is_a?(Hash)
+
+              item = {}
+              ["description", "homepage"].each do |field|
+                value = settings[field]
+                item[field] = value if value.is_a?(String) && !value.strip.empty?
+              end
+              out[full_name] = item unless item.empty?
+            end
+
+            File.write(".github/repos.generated.json", JSON.pretty_generate(out))
+          '
       - uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GH_PAT }}
           script: |
+            const fs = require('fs');
             const owner = '${{ github.repository_owner }}';
             const includeArchived = ${{ env.INCLUDE_ARCHIVED }} === true || '${{ env.INCLUDE_ARCHIVED }}' === 'true';
             const maxRetries = 3;
@@ -59,6 +98,12 @@ jobs:
               }
               throw lastError;
             };
+            const repoSettings = fs.existsSync('.github/repos.generated.json')
+              ? JSON.parse(fs.readFileSync('.github/repos.generated.json', 'utf8'))
+              : {};
+            console.log(
+              `Loaded per-repo description/homepage entries for ${Object.keys(repoSettings).length} repos`
+            );
             const orgRepos = await withRetry(() =>
               github.paginate(github.rest.repos.listForOrg, {
                 org: 'hongyime',
@@ -70,8 +115,7 @@ jobs:
             const personalRepos = await withRetry(() =>
               github.paginate(github.rest.repos.listForAuthenticatedUser, {
                 per_page: 100,
-                affiliation: 'owner',
-                type: 'owner'
+                affiliation: 'owner'
               })
             );
             const personalOnly = personalRepos.filter(r => r.owner.login !== 'hongyime' && !r.fork);
@@ -106,26 +150,32 @@ jobs:
                 // (unlimited on GitHub-hosted standard runners) were being
                 // burned instead. Use `gh repo edit <owner>/<repo>
                 // --visibility public|private` to change visibility.
+                const configured = repoSettings[`${repoOwner}/${repo.name}`] || {};
+                const settingsPayload = {
+                  owner: repoOwner,
+                  repo: repo.name,
+                  has_issues: true,
+                  has_wiki: true,
+                  has_projects: true,
+                  has_discussions: true,
+                  allow_auto_merge: true,
+                  delete_branch_on_merge: true,
+                  allow_squash_merge: true,
+                  allow_merge_commit: true,
+                  allow_rebase_merge: true,
+                  allow_forking: true,
+                  web_commit_signoff_required: false,
+                  has_downloads: true,
+                  has_pages: false
+                };
+                if (typeof configured.description === 'string' && configured.description.trim() !== '') {
+                  settingsPayload.description = configured.description;
+                }
+                if (typeof configured.homepage === 'string' && configured.homepage.trim() !== '') {
+                  settingsPayload.homepage = configured.homepage;
+                }
                 await withRetry(() =>
-                  github.rest.repos.update({
-                    owner: repoOwner,
-                    repo: repo.name,
-                    description: "Give me 1 ⭐ if it's cool.",
-                    homepage: "https://www.hong-yi.me",
-                    has_issues: true,
-                    has_wiki: true,
-                    has_projects: true,
-                    has_discussions: true,
-                    allow_auto_merge: true,
-                    delete_branch_on_merge: true,
-                    allow_squash_merge: true,
-                    allow_merge_commit: true,
-                    allow_rebase_merge: true,
-                    allow_forking: true,
-                    web_commit_signoff_required: false,
-                    has_downloads: true,
-                    has_pages: false
-                  })
+                  github.rest.repos.update(settingsPayload)
                 );
                 console.log(`✅ Successfully configured settings for: ${repoOwner}/${repo.name}`);
               } catch (error) {
@@ -169,7 +219,7 @@ jobs:
           # repos will get swept up too.
           { \
             gh api --paginate "orgs/hongyime/repos?per_page=100" --jq '.[] | select(.disabled==false) | .full_name'; \
-            gh api --paginate "user/repos?per_page=100&affiliation=owner&type=owner" --jq '.[] | select(.disabled==false and .fork==false and (.owner.login != "hongyime")) | .full_name'; \
+            gh api --paginate "user/repos?per_page=100&affiliation=owner" --jq '.[] | select(.disabled==false and .fork==false and (.owner.login != "hongyime")) | .full_name'; \
           } | sort -u \
           | while IFS= read -r repo; do
               echo "$GH_PAT" | gh secret set GH_PAT --repo "$repo" && echo "Set GH_PAT: $repo" || echo "Failed: $repo"
@@ -201,6 +251,8 @@ jobs:
         .github/pull_request_template.md|.github/pull_request_template.md
         CONTRIBUTING.md|CONTRIBUTING.md
         SECURITY.md|SECURITY.md
+        LICENSE|LICENSE
+        NOTICE|NOTICE
         .gitattributes|.gitattributes
         .github/labels.yml|.github/labels.yml
         .github/workflows/labeler.yml|.github/workflows/labeler.yml

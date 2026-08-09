@@ -1,0 +1,31 @@
+# Controlled GitHub topic vocabulary for owned repositories.
+# Reserved sync-control topics. Do not repurpose.
+reserved:
+  - keep-lfs
+  - no-config-sync
+
+topics:
+  - ai
+  - api
+  - automation
+  - browser-extension
+  - cli
+  - data
+  - dataset
+  - education
+  - flask
+  - game
+  - github-actions
+  - javascript
+  - nextjs
+  - nodejs
+  - portfolio
+  - python
+  - react
+  - singapore
+  - static-site
+  - supabase
+  - tool
+  - typescript
+  - vercel
+  - web
