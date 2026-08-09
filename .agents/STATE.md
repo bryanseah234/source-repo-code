@@ -3,7 +3,7 @@
 **Updated:** 2026-08-09 SGT
 **By:** codex / machine: desktop
 **Branch:** `molt/state-continuity`
-**Ended because:** ready for cross-harness proof
+**Ended because:** ready for cross-harness proof with committed handoff
 
 ---
 
@@ -28,14 +28,17 @@ plain-text state instead of private session stores.
   file.
 - Repointed local `session-handoff` skill copies from `.claude/handoffs/` to
   `.agents/handoffs/` and made validation block on secret or identity hits.
+- Added a committed handoff document under `.agents/handoffs/` so a cold
+  harness has a compact resume target in addition to this state file.
 
 ## Next steps
 
 1. Prove resume behavior from a different harness by asking it to read
    `X:\01 REPOSITORIES\_shell\PROGRESS.md`.
-2. If the harness picks up the current state, push/open PRs for the MOLT
+2. Ask that harness to also read the latest handoff in `.agents/handoffs/`.
+3. If the harness picks up the current state, push/open PRs for the MOLT
    branches.
-3. Keep SHELL remediation paused until central sync/state changes are reviewed.
+4. Keep SHELL remediation paused until central sync/state changes are reviewed.
 
 Exact Phase 3 proof prompt to paste into a different CLI:
 
@@ -70,6 +73,7 @@ resume from X:\01 REPOSITORIES\_shell\PROGRESS.md
 - `.agents/STATE.md`
 - `.agents/JOURNAL.md`
 - `.agents/handoffs/`
+- `.agents/handoffs/2026-08-09-molt-layer0-ready.md`
 - `X:\01 REPOSITORIES\theprawnprojects\.agents\STATE.md`
 - `X:\01 REPOSITORIES\_shell\PROGRESS.md`
 
