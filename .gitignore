@@ -5,7 +5,12 @@
 
 # AI coding tool directories — local only, not tracked
 .adal/
-.agents/
+.agents/*
+!.agents/
+!.agents/STATE.md
+!.agents/JOURNAL.md
+!.agents/handoffs/
+!.agents/handoffs/**
 .augment/
 .bob/
 .claude/

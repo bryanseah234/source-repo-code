@@ -22,12 +22,13 @@ REARCHIVE_FAILED_REPOS=()
 # path). Any future personal-account repos are picked up automatically.
 REPOS_JSON="$( { \
   gh api --paginate "orgs/hongyime/repos?per_page=100"; \
-  gh api --paginate "user/repos?per_page=100&affiliation=owner&type=owner"; \
+  gh api --paginate "user/repos?per_page=100&affiliation=owner"; \
   } | jq -s 'add | unique_by(.full_name) | map(select(.disabled == false and .fork == false))')"
 
 # Dot files/folders that are NEVER deleted from target repos
 EXEMPT_DOTS=(
   ".git" ".github" ".gitignore" ".gitattributes" ".gitmodules"
+  ".agents"
   ".editorconfig" ".nvmrc" ".node-version" ".python-version" ".tool-versions"
   ".prettierrc" ".prettierrc.js" ".prettierrc.cjs" ".prettierrc.json"
   ".prettierrc.yml" ".prettierrc.yaml" ".prettierignore"
@@ -151,6 +152,7 @@ inject_gitignore_entries() {
 # AI / editor dot directories (managed via sourcerepo)
 .*
 !.github/
+!.agents/
 !.gitignore
 !.gitattributes
 !.gitmodules
