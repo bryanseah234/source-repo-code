@@ -37,6 +37,12 @@ plain-text state instead of private session stores.
    branches.
 3. Keep SHELL remediation paused until central sync/state changes are reviewed.
 
+Exact Phase 3 proof prompt to paste into a different CLI:
+
+```text
+resume from X:\01 REPOSITORIES\_shell\PROGRESS.md
+```
+
 ## Decisions made
 
 - Track only `.agents/STATE.md`, `.agents/JOURNAL.md`, and
@@ -53,6 +59,8 @@ plain-text state instead of private session stores.
   committed unless `_shell` becomes a repo or the file is copied into a repo.
 - `sourcerepo` still has uncommitted SHELL scaffold/audit files from the Claude
   SHELL run. They are separate from the MOLT commit.
+- Local Git config previously had credential-bearing remote URL entries; they
+  were removed, leaving only `remote.origin.url`.
 
 ## Files in play
 
