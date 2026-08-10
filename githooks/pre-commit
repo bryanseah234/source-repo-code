@@ -1,0 +1,23 @@
+#!/usr/bin/env pwsh
+$ErrorActionPreference = "Stop"
+
+$repoRoot = git rev-parse --show-toplevel
+if (-not $repoRoot) {
+  exit 0
+}
+
+$scanner = Join-Path $repoRoot "tools/scan_identity.py"
+if (-not (Test-Path -LiteralPath $scanner)) {
+  $scanner = Join-Path $PSScriptRoot "..\tools\scan_identity.py"
+}
+
+if (-not (Test-Path -LiteralPath $scanner)) {
+  Write-Error "SHELL pre-commit: tools/scan_identity.py not found"
+  exit 2
+}
+
+python $scanner $repoRoot --quiet
+if ($LASTEXITCODE -ne 0) {
+  Write-Error "SHELL pre-commit: identity scan failed"
+  exit $LASTEXITCODE
+}

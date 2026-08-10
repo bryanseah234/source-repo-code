@@ -1,0 +1,291 @@
+# Per-repo metadata for sourcerepo sync and SHELL compliance.
+# Empty description/homepage values are intentionally ignored by the sync workflow,
+# preserving the existing GitHub value until Phase 4 fills real metadata.
+bryanseah234/bryanseah234:
+  description: ""
+  homepage: ""
+  topics: []
+bryanseah234/bryanseah234.github.io:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/anywheelsQR2020:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/attackpassword:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/chromedino:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/ctfsolver:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/dejavista:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/emailvalidate:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/emailverification:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/englishDefinitions2021:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/englishwords:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/facetracker:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/FORGE:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/gmailclient:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/gmaplists:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/infinityTabs2020:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/keyLogger2020:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/musicstream:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/nanyangNightStudy2020:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/networkScan2020:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/nusnetID2021:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/omegleFinder2021:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/patreonalive:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/piixesicons:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/playchess:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/playsplendor:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/pocketclawd:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/pokemoncards:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/pokemonpacks:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/pythoncrash:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/rainbowchess:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/ramenreviews:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/removeaudio:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/renamephotos:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/safeEntry2020:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/searchIG2020:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/sgAveroTech2021:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/sgBusLaoBu2021:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/sgCampusCore2026:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/sgCarParks2020:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/sgNRIC2003:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/sgNRICgenerator65:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/sgNumbers2020:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/sgPayNowQR65:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/sgPhoneNumbers65:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/sgPostalCodes2017:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/sgSchools2020:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/sgSHIOK2026:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/sgStyleSnap2025:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/sgWerkzPhotography2021:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/smucourses:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/smuseats:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/sourcerepo:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/spritescavenger:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/supabasealive:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/swiperboxd:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/theprawnfeeds:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/theprawngame:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/theprawnhome:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/theprawnhunter:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/theprawnprojects:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/theprawnredirects:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/theprawnsurprise:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/ticketremaster-b:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/ticketremaster-f:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/trexrunner:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/unifiedanalyzer:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/unifiedcollector:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/validateNRIC2020:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/websiteDOS2019:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/wordleguesser:
+  description: ""
+  homepage: ""
+  topics: []
+hongyime/youtubepublisher:
+  description: ""
+  homepage: ""
+  topics: []
