@@ -30,10 +30,10 @@ Every non-disabled repo (**including archived** — see below) receives:
 | Dependabot config | `.github/dependabot_config.yml` → `.github/dependabot.yml` |
 | Issue + PR templates | `.github/ISSUE_TEMPLATE/*`, `.github/pull_request_template.md` |
 | Community files | `CONTRIBUTING.md`, `SECURITY.md`, `AGENTS.md` |
-| Config | `.gitattributes`, `.deepsource.toml`, `.sourcery.yml`, `.github/labels.yml`, `.github/greetings.yml`, `.github/FUNDING.yml` |
+| Config | `.gitattributes`, `.deepsource.toml`, `.sourcery.yml`, `.github/labels.yml`, `.github/greetings.yml`, `.github/FUNDING.yml`, `LICENSE`, `NOTICE` |
 
 **Also propagates:**
-- Repo settings (auto-merge, delete-on-merge, discussions, wiki, issues, description, homepage, visibility)
+- Repo settings (auto-merge, delete-on-merge, discussions, wiki, issues, description, homepage)
 - `GH_PAT` secret (for cross-repo automation)
 
 ## Archived repos
@@ -136,20 +136,22 @@ Two scripts on the X:\01 REPOSITORIES root drive user machines pull all repos lo
 
 ## Visibility policy
 
-Enforced by `configure-repo-settings` job:
+Visibility is **not** currently enforced by `sync-repo-settings.yml`.
 
-- All repos → private
-- Exception: repos with `theprawn` in name → public
+Current practical policy:
 
-Override by editing the `isTheprawn` check in `sync-repo-settings.yml`.
+- Repos intended as portfolio, demos, datasets, or public utilities may remain public.
+- Repos containing private operations, credentials-adjacent automation, private data workflows, or unclear exposure risk should be private.
+- Compliance reports should flag visibility drift for human review rather than flipping visibility automatically.
+- Do not restore the old private-except-`theprawn` enforcement without a deliberate review; many `sg*` and showcase repos are intentionally public today.
 
 ## Cleanup performed on every target repo
 
 - Delete unlisted dot items at root (except exemption list: `.github/`, `.gitignore`, `.gitattributes`, `.editorconfig`, `.nvmrc`, `.node-version`, `.python-version`, `.tool-versions`, `.prettier*`, `.eslint*`, `.stylelint*`, `.babel*`, `.browserslistrc`, `.dockerignore`, `.npmrc`, `.yarnrc*`, `.pnpmfile.cjs`, `.env.example`, `.env.template`, `.env.sample`, `.sourcery.yml`, `.deepsource.toml`, `.htaccess`)
 - Delete all `*.code-workspace` files recursively
-- Remove `skills/`, `skills-lock.json`, `docs/`, `templates/` from tracking
+- Remove `skills/`, `skills-lock.json`, and `docs/` from tracking
 - Inject `.gitignore` entries to prevent re-accumulation
 
 ## License
 
-MIT
+Apache-2.0. See `LICENSE` and `NOTICE`.
