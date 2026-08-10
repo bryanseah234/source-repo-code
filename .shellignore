@@ -1,0 +1,14 @@
+# Structural SHELL control files contain owned repo names, owners, or historical
+# audit paths. They are metadata about the estate rather than personal-contact
+# content and are reviewed through the standard repo inventory process.
+COMPLIANCE.md
+STANDARD.md
+inventory.json
+phase2-audit.partial.json
+phase*.json
+repos.yml
+tiers.yml
+.github/scripts/sync-selected-paths.sh
+.github/workflows/sync-repo-settings.yml
+tools/check_repo.py
+tools/new_repo.ps1
