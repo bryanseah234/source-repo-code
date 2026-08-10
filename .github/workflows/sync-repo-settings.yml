@@ -75,7 +75,7 @@ jobs:
 
             File.write(".github/repos.generated.json", JSON.pretty_generate(out))
           '
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GH_PAT }}
           script: |
