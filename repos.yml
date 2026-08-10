@@ -1,291 +1,592 @@
 # Per-repo metadata for sourcerepo sync and SHELL compliance.
-# Empty description/homepage values are intentionally ignored by the sync workflow,
-# preserving the existing GitHub value until Phase 4 fills real metadata.
+# description/homepage are applied only when non-empty.
+# topics must come from topics.yml; keep-lfs and no-config-sync are reserved sync-control topics.
 bryanseah234/bryanseah234:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "GitHub profile repository for public project metadata and account-level documentation."
+  homepage: "https://bryanseah234.github.io/bryanseah234/"
+  topics:
+    - portfolio
+    - static-site
+    - web
 bryanseah234/bryanseah234.github.io:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Static GitHub Pages site with small HTML demos and public portfolio pages."
+  homepage: "https://bryanseah234.github.io/"
+  topics:
+    - portfolio
+    - static-site
+    - web
+    - javascript
 hongyime/anywheelsQR2020:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python scripts for generating Anywheel Singapore bike QR code datasets."
+  homepage: "https://hongyime.github.io/anywheelsQR2020/"
+  topics:
+    - python
+    - data
+    - singapore
+    - tool
 hongyime/attackpassword:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Educational Python password attack demos for brute-force and dictionary techniques."
+  homepage: "https://hongyime.github.io/attackpassword/"
+  topics:
+    - python
+    - education
+    - tool
+    - automation
 hongyime/chromedino:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "JavaScript automation snippet for the Chrome Dino runner game."
+  homepage: "https://hongyime.github.io/chromedino/"
+  topics:
+    - javascript
+    - game
+    - automation
+    - web
 hongyime/ctfsolver:
-  description: ""
+  description: "Streamlit and MCP harness for running AI agents against CTFd challenges in Docker sandboxes."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - ai
+    - automation
+    - tool
+    - web
 hongyime/dejavista:
-  description: ""
+  description: "Chrome extension that tracks fashion browsing history and recommends outfits with AI."
   homepage: ""
-  topics: []
+  topics:
+    - browser-extension
+    - react
+    - ai
+    - supabase
+    - web
 hongyime/emailvalidate:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python utility for validating email address formats from the command line."
+  homepage: "https://hongyime.github.io/emailvalidate/"
+  topics:
+    - python
+    - cli
+    - tool
+    - automation
 hongyime/emailverification:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "TypeScript email verification utility with source code under src."
+  homepage: "https://hongyime.github.io/emailverification/"
+  topics:
+    - typescript
+    - tool
+    - automation
+    - web
 hongyime/englishDefinitions2021:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python extractor for turning English definition text into CSV output."
+  homepage: "https://hongyime.github.io/englishDefinitions2021/"
+  topics:
+    - python
+    - data
+    - education
+    - tool
 hongyime/englishwords:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python utility for working with English word lists."
+  homepage: "https://hongyime.github.io/englishwords/"
+  topics:
+    - python
+    - data
+    - education
+    - tool
 hongyime/facetracker:
-  description: ""
+  description: "Local FastAPI face search engine for indexing and searching private photo and video collections."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - api
+    - data
+    - tool
+    - web
 hongyime/FORGE:
-  description: ""
+  description: "Python toolkit with CLI scripts, services, migrations, and tests; fuller purpose unclear."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - cli
+    - automation
+    - tool
 hongyime/gmailclient:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python Gmail client experiment for email API automation."
+  homepage: "https://hongyime.github.io/gmailclient/"
+  topics:
+    - python
+    - api
+    - automation
+    - tool
 hongyime/gmaplists:
-  description: ""
+  description: "Vite and extension project for working with Google Maps list data."
   homepage: ""
-  topics: []
+  topics:
+    - typescript
+    - browser-extension
+    - web
+    - tool
 hongyime/infinityTabs2020:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Batch-file demo that repeatedly opens tabs for browser stress testing."
+  homepage: "https://hongyime.github.io/infinityTabs2020/"
+  topics:
+    - automation
+    - tool
+    - web
 hongyime/keyLogger2020:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Educational Python keyboard event logger demo."
+  homepage: "https://hongyime.github.io/keyLogger2020/"
+  topics:
+    - python
+    - education
+    - tool
 hongyime/musicstream:
-  description: ""
+  description: "Self-hosted music pipeline for syncing Spotify libraries to Plex with downloads and scrobbling."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - automation
+    - api
+    - data
+    - tool
 hongyime/nanyangNightStudy2020:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python web app experiment for Nanyang night study camera/status tracking."
+  homepage: "https://hongyime.github.io/nanyangNightStudy2020/"
+  topics:
+    - python
+    - flask
+    - web
+    - education
 hongyime/networkScan2020:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python network scanning utility using scapy."
+  homepage: "https://hongyime.github.io/networkScan2020/"
+  topics:
+    - python
+    - cli
+    - tool
+    - automation
 hongyime/nusnetID2021:
-  description: ""
+  description: "Python generator for NUSNET-style identifier data."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - education
+    - data
+    - tool
 hongyime/omegleFinder2021:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "JavaScript Omegle IP finder experiment."
+  homepage: "https://hongyime.github.io/omegleFinder2021/"
+  topics:
+    - javascript
+    - web
+    - tool
+    - automation
 hongyime/patreonalive:
-  description: ""
+  description: "Python keep-alive helper for Patreon-related automation."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - automation
+    - api
+    - tool
 hongyime/piixesicons:
-  description: ""
+  description: "Python scraper for downloading icon image assets."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - automation
+    - data
+    - tool
 hongyime/playchess:
-  description: ""
+  description: "Python chess game project with installer, move logs, and tests."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - game
+    - tool
+    - web
 hongyime/playsplendor:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Java Splendor board game implementation with browser test harness and rules documentation."
+  homepage: "https://hongyime.github.io/playsplendor/"
+  topics:
+    - game
+    - javascript
+    - web
+    - education
 hongyime/pocketclawd:
-  description: ""
+  description: "Personal Claude assistant platform with TypeScript app, orchestration, and deployment tooling."
   homepage: ""
-  topics: []
+  topics:
+    - typescript
+    - nodejs
+    - automation
+    - tool
+    - web
 hongyime/pokemoncards:
-  description: ""
+  description: "Python scraper for Pokemon card and set metadata."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - data
+    - automation
+    - tool
 hongyime/pokemonpacks:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Vite React Pokemon pack-opening simulator."
+  homepage: "https://hongyime.github.io/pokemonpacks/"
+  topics:
+    - react
+    - typescript
+    - game
+    - web
 hongyime/pythoncrash:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Small Python crash-course exercises split across numbered scripts."
+  homepage: "https://hongyime.github.io/pythoncrash/"
+  topics:
+    - python
+    - education
+    - tool
 hongyime/rainbowchess:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python web chess variant with move history and static assets."
+  homepage: "https://hongyime.github.io/rainbowchess/"
+  topics:
+    - python
+    - game
+    - flask
+    - web
 hongyime/ramenreviews:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Flask ramen review app backed by ratings data and a local database."
+  homepage: "https://hongyime.github.io/ramenreviews/"
+  topics:
+    - python
+    - flask
+    - data
+    - web
 hongyime/removeaudio:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python utility for removing audio tracks from media files."
+  homepage: "https://hongyime.github.io/removeaudio/"
+  topics:
+    - python
+    - cli
+    - automation
+    - tool
 hongyime/renamephotos:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python script for batch-renaming photo files."
+  homepage: "https://hongyime.github.io/renamephotos/"
+  topics:
+    - python
+    - cli
+    - automation
+    - tool
 hongyime/safeEntry2020:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python SafeEntry-style QR and image generation experiment."
+  homepage: "https://hongyime.github.io/safeEntry2020/"
+  topics:
+    - python
+    - singapore
+    - tool
+    - automation
 hongyime/searchIG2020:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python Instagram profile search and scraping experiment."
+  homepage: "https://hongyime.github.io/searchIG2020/"
+  topics:
+    - python
+    - automation
+    - data
+    - tool
 hongyime/sgAveroTech2021:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Singapore Avero Tech data scripts for image retrieval and MD5 sample generation."
+  homepage: "https://hongyime.github.io/sgAveroTech2021/"
+  topics:
+    - python
+    - data
+    - singapore
+    - automation
 hongyime/sgBusLaoBu2021:
-  description: ""
+  description: "Singapore bus fare and transport web app with Python backend and data files."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - flask
+    - singapore
+    - data
+    - web
 hongyime/sgCampusCore2026:
-  description: ""
+  description: "Next.js and Convex campus issue-reporting network for SMU."
   homepage: ""
-  topics: []
+  topics:
+    - nextjs
+    - typescript
+    - react
+    - singapore
+    - web
 hongyime/sgCarParks2020:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python web app for Singapore HDB car park information."
+  homepage: "https://hongyime.github.io/sgCarParks2020/"
+  topics:
+    - python
+    - flask
+    - singapore
+    - data
+    - web
 hongyime/sgNRIC2003:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python scripts and generated outputs for Singapore NRIC datasets."
+  homepage: "https://hongyime.github.io/sgNRIC2003/"
+  topics:
+    - python
+    - data
+    - singapore
+    - tool
 hongyime/sgNRICgenerator65:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Flask and CLI utilities for generating Singapore NRIC barcodes."
+  homepage: "https://hongyime.github.io/sgNRICgenerator65/"
+  topics:
+    - python
+    - flask
+    - singapore
+    - tool
+    - web
 hongyime/sgNumbers2020:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python generator for Singapore number datasets."
+  homepage: "https://hongyime.github.io/sgNumbers2020/"
+  topics:
+    - python
+    - data
+    - singapore
+    - tool
 hongyime/sgPayNowQR65:
-  description: ""
+  description: "Python utility for generating Singapore PayNow QR codes."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - singapore
+    - automation
+    - tool
 hongyime/sgPhoneNumbers65:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python generator and checker for Singapore phone number datasets."
+  homepage: "https://hongyime.github.io/sgPhoneNumbers65/"
+  topics:
+    - python
+    - data
+    - singapore
+    - tool
 hongyime/sgPostalCodes2017:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Singapore postal code data extraction scripts and output files."
+  homepage: "https://hongyime.github.io/sgPostalCodes2017/"
+  topics:
+    - python
+    - data
+    - singapore
+    - tool
 hongyime/sgSchools2020:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Static Singapore schools dataset and map page."
+  homepage: "https://hongyime.github.io/sgSchools2020/"
+  topics:
+    - data
+    - singapore
+    - education
+    - static-site
 hongyime/sgSHIOK2026:
-  description: ""
+  description: "Python pipeline and web assets for the S.H.I.O.K. Singapore index."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - data
+    - singapore
+    - web
 hongyime/sgStyleSnap2025:
-  description: ""
+  description: "TypeScript web app for Singapore style snapshots with database and test assets."
   homepage: ""
-  topics: []
+  topics:
+    - typescript
+    - web
+    - singapore
+    - data
 hongyime/sgWerkzPhotography2021:
-  description: ""
+  description: "Python image retrieval scripts for Singapore Werkz Photography data."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - automation
+    - singapore
+    - data
 hongyime/smucourses:
-  description: ""
+  description: "Enhanced SMU course catalog with data pipeline scripts and web frontend."
   homepage: ""
-  topics: []
+  topics:
+    - data
+    - education
+    - web
+    - tool
 hongyime/smuseats:
-  description: ""
+  description: "Vite React app for SMU seat and floorplan workflows."
   homepage: ""
-  topics: []
+  topics:
+    - react
+    - typescript
+    - singapore
+    - web
 hongyime/sourcerepo:
-  description: ""
+  description: "Central automation hub for syncing repository standards and compliance checks across owned repos."
   homepage: ""
-  topics: []
+  topics:
+    - github-actions
+    - automation
+    - python
+    - tool
 hongyime/spritescavenger:
-  description: ""
+  description: "Next.js Sprite Scavenger web app with tests and static assets."
   homepage: ""
-  topics: []
+  topics:
+    - nextjs
+    - typescript
+    - react
+    - game
+    - web
 hongyime/supabasealive:
-  description: ""
+  description: "Cloudflare Worker cron that keeps Supabase projects awake with scheduled database pings."
   homepage: ""
-  topics: []
+  topics:
+    - supabase
+    - automation
+    - typescript
+    - api
+    - tool
 hongyime/swiperboxd:
-  description: ""
+  description: "Movie discovery web app with frontend, API scripts, tests, and extraction tooling."
   homepage: ""
-  topics: []
+  topics:
+    - javascript
+    - python
+    - web
+    - api
+    - tool
 hongyime/theprawnfeeds:
-  description: ""
+  description: "RSS reader web app with Python API, feed configuration, and static frontend assets."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - javascript
+    - web
+    - api
+    - tool
 hongyime/theprawngame:
-  description: ""
+  description: "Vite React game project for The Prawn Organisation."
   homepage: ""
-  topics: []
+  topics:
+    - react
+    - typescript
+    - game
+    - web
+    - portfolio
 hongyime/theprawnhome:
-  description: ""
+  description: "Vite React home site for The Prawn Organisation."
   homepage: ""
-  topics: []
+  topics:
+    - react
+    - typescript
+    - portfolio
+    - web
 hongyime/theprawnhunter:
-  description: ""
+  description: "Self-hosted OSINT monitoring pipeline with API, database, and frontend components."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - automation
+    - data
+    - web
+    - api
 hongyime/theprawnprojects:
-  description: ""
+  description: "Vite React portfolio projects site for The Prawn Organisation."
   homepage: ""
-  topics: []
+  topics:
+    - react
+    - typescript
+    - portfolio
+    - web
 hongyime/theprawnredirects:
-  description: ""
+  description: "Static redirect site for The Prawn Organisation links."
   homepage: ""
-  topics: []
+  topics:
+    - static-site
+    - portfolio
+    - web
+    - tool
 hongyime/theprawnsurprise:
-  description: ""
+  description: "Vite React surprise page for The Prawn Organisation."
   homepage: ""
-  topics: []
+  topics:
+    - react
+    - typescript
+    - portfolio
+    - web
 hongyime/ticketremaster-b:
-  description: ""
+  description: "TicketRemaster backend with services, orchestrators, API gateway, and deployment assets."
   homepage: ""
-  topics: []
+  topics:
+    - api
+    - python
+    - automation
+    - web
+    - tool
 hongyime/ticketremaster-f:
-  description: ""
+  description: "TicketRemaster frontend built with Vite, TypeScript, tests, and Vercel config."
   homepage: ""
-  topics: []
+  topics:
+    - typescript
+    - web
+    - automation
+    - tool
 hongyime/trexrunner:
-  description: ""
+  description: "Static browser runner game with HTML, CSS, JavaScript, and image assets."
   homepage: ""
-  topics: []
+  topics:
+    - static-site
+    - javascript
+    - game
+    - web
 hongyime/unifiedanalyzer:
-  description: ""
+  description: "Python analyzer project with Docker assets, frontend, tests, and planning docs."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - data
+    - automation
+    - tool
 hongyime/unifiedcollector:
-  description: ""
+  description: "Python collector project with dashboard, models, scripts, tests, and research notes."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - data
+    - automation
+    - tool
 hongyime/validateNRIC2020:
-  description: ""
+  description: "Flask and Python utilities for validating Singapore NRIC checksums."
   homepage: ""
-  topics: []
+  topics:
+    - python
+    - flask
+    - singapore
+    - tool
+    - web
 hongyime/websiteDOS2019:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Educational Python request-load script demo for web availability testing."
+  homepage: "https://hongyime.github.io/websiteDOS2019/"
+  topics:
+    - python
+    - education
+    - automation
+    - tool
 hongyime/wordleguesser:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "Python Wordle helper using word lists and frequency data."
+  homepage: "https://hongyime.github.io/wordleguesser/"
+  topics:
+    - python
+    - game
+    - data
+    - tool
 hongyime/youtubepublisher:
-  description: ""
-  homepage: ""
-  topics: []
+  description: "JavaScript helper for publishing YouTube drafts with a demo GIF."
+  homepage: "https://hongyime.github.io/youtubepublisher/"
+  topics:
+    - javascript
+    - automation
+    - api
+    - tool
