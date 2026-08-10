@@ -136,14 +136,17 @@ Two scripts on the X:\01 REPOSITORIES root drive user machines pull all repos lo
 
 ## Visibility policy
 
-Visibility is **not** currently enforced by `sync-repo-settings.yml`.
+Visibility is enforced by `sync-repo-settings.yml` from `repos.yml`.
 
 Current practical policy:
 
-- Repos intended as portfolio, demos, datasets, or public utilities may remain public.
-- Repos containing private operations, credentials-adjacent automation, private data workflows, or unclear exposure risk should be private.
-- Compliance reports should flag visibility drift for human review rather than flipping visibility automatically.
-- Do not restore the old private-except-`theprawn` enforcement without a deliberate review; many `sg*` and showcase repos are intentionally public today.
+- Repos are public by default.
+- Set `visibility: private` in `repos.yml` for private operations,
+  credentials-adjacent automation, private data workflows, or unclear exposure risk.
+- Compliance reports flag visibility drift, and the weekly settings sync enforces
+  the configured public/private state.
+- Do not restore the old private-except-`theprawn` rule; it does not match the
+  current estate.
 
 ## Cleanup performed on every target repo
 

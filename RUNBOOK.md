@@ -114,21 +114,20 @@ Command errors or scanner timeouts:
 
 ## Visibility Policy
 
-Visibility is currently a human policy, not an automatic sync setting.
+Visibility is an explicit `repos.yml` policy enforced by the weekly settings sync.
 
 Recommended policy:
 
-- Public: portfolio projects, demos, static sites, open datasets, and public
-  utilities that pass the identity scan.
-- Private: private operations, credentials-adjacent automation, projects with
-  unclear exposure risk, private data workflows, or repos with unresolved history
-  identity decisions.
+- Public: the default for portfolio projects, demos, static sites, open datasets,
+  and public utilities that pass the identity scan.
+- Private: add `visibility: private` in `repos.yml` for private operations,
+  credentials-adjacent automation, projects with unclear exposure risk, private
+  data workflows, or repos with unresolved history identity decisions.
 - Archived: keep the existing archive state; sync handles unarchive and
   re-archive for config updates.
 
-Do not reintroduce broad automatic visibility flipping without reviewing the
-current public/private estate. The old private-except-`theprawn` rule does not
-match today’s public showcase and Singapore data repos.
+Do not restore the old private-except-`theprawn` rule; it does not match today’s
+estate.
 
 ## Weekly Operations
 

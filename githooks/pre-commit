@@ -1,32 +1,72 @@
-#!/usr/bin/env pwsh
-$ErrorActionPreference = "Stop"
+#!/usr/bin/env python
+"""SHELL pre-commit hook.
 
-$repoRoot = git rev-parse --show-toplevel
-if (-not $repoRoot) {
-  exit 0
-}
+Git hook filenames are extensionless. Keeping this hook in Python avoids
+PowerShell's Windows-only requirement that `-File` targets end in `.ps1`.
+"""
 
-$candidates = @(
-  (Join-Path $repoRoot "tools/scan_identity.py"),
-  (Join-Path $PSScriptRoot "..\tools\scan_identity.py"),
-  (Join-Path $env:USERPROFILE ".githooks\scan_identity.py")
-)
+from __future__ import annotations
 
-$scanner = $null
-foreach ($candidate in $candidates) {
-  if ($candidate -and (Test-Path -LiteralPath $candidate)) {
-    $scanner = $candidate
-    break
-  }
-}
+import subprocess
+import sys
+import tempfile
+import shutil
+from pathlib import Path
 
-if (-not $scanner) {
-  Write-Error "SHELL pre-commit: tools/scan_identity.py not found"
-  exit 2
-}
 
-python $scanner $repoRoot --quiet
-if ($LASTEXITCODE -ne 0) {
-  Write-Error "SHELL pre-commit: identity scan failed"
-  exit $LASTEXITCODE
-}
+def run(cmd: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        cmd,
+        cwd=str(cwd) if cwd else None,
+        capture_output=True,
+        text=True,
+        errors="replace",
+    )
+
+
+def main() -> int:
+    root_proc = run(["git", "rev-parse", "--show-toplevel"])
+    if root_proc.returncode != 0:
+        return 0
+
+    repo_root = Path(root_proc.stdout.strip()).resolve()
+    staged_proc = run(["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR", "-z"], repo_root)
+    if staged_proc.returncode != 0:
+        print(staged_proc.stderr, file=sys.stderr)
+        return staged_proc.returncode
+
+    staged = [name for name in staged_proc.stdout.split("\0") if name]
+    if not staged:
+        return 0
+
+    home = Path.home()
+    candidates = [
+        repo_root / "tools" / "scan_identity.py",
+        Path(__file__).resolve().parent.parent / "tools" / "scan_identity.py",
+        home / ".githooks" / "scan_identity.py",
+    ]
+    scanner = next((path for path in candidates if path.is_file()), None)
+    if scanner is None:
+        print("SHELL pre-commit: tools/scan_identity.py not found", file=sys.stderr)
+        return 2
+
+    with tempfile.TemporaryDirectory(prefix="shell-precommit-") as tmp:
+        scan_root = Path(tmp)
+        ignore = repo_root / ".shellignore"
+        if ignore.is_file():
+            shutil.copy2(ignore, scan_root / ".shellignore")
+        for rel in staged:
+            source = (repo_root / rel).resolve()
+            if not source.is_file() or not source.is_relative_to(repo_root):
+                continue
+            target = scan_root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+        proc = subprocess.run([sys.executable, str(scanner), str(scan_root), "--quiet"])
+    if proc.returncode != 0:
+        print("SHELL pre-commit: identity scan failed", file=sys.stderr)
+    return proc.returncode
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

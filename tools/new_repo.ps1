@@ -83,6 +83,7 @@ function Add-ReposEntry {
     [string]$FullName,
     [string]$Description,
     [string]$Homepage,
+    [string]$Visibility,
     [string[]]$Topics
   )
 
@@ -95,6 +96,9 @@ function Add-ReposEntry {
   $entry.Add($FullName + ":")
   $entry.Add("  description: `"$Description`"")
   $entry.Add("  homepage: `"$Homepage`"")
+  if ($Visibility -eq "private") {
+    $entry.Add("  visibility: private")
+  }
   $entry.Add("  topics:")
   foreach ($topic in $Topics) {
     $entry.Add("    - $topic")
@@ -169,6 +173,7 @@ git -C $repoPath add README.md LICENSE NOTICE .gitignore
 git -C $repoPath commit -m "chore: initialise compliant repository" | Out-Null
 
 $visibility = if ($Private) { "--private" } else { "--public" }
+$visibilityValue = if ($Private) { "private" } else { "public" }
 gh repo create $fullName $visibility --source $repoPath --remote origin --push --description $Description
 
 $topicArgs = @()
@@ -184,7 +189,7 @@ if (-not [string]::IsNullOrWhiteSpace($Homepage)) {
 }
 
 Add-YamlListItem -Path (Join-Path $shellRoot "tiers.yml") -Section $Tier -Value $fullName
-Add-ReposEntry -Path (Join-Path $shellRoot "repos.yml") -FullName $fullName -Description $Description -Homepage $Homepage -Topics $Topics
+Add-ReposEntry -Path (Join-Path $shellRoot "repos.yml") -FullName $fullName -Description $Description -Homepage $Homepage -Visibility $visibilityValue -Topics $Topics
 
 Write-Host "Created $fullName at $repoPath"
 Write-Host "Review and commit the tiers.yml/repos.yml changes in sourcerepo."

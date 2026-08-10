@@ -66,6 +66,10 @@ jobs:
                 value = settings[field]
                 item[field] = value if value.is_a?(String) && !value.strip.empty?
               end
+              visibility = settings["visibility"]
+              if visibility.is_a?(String) && ["public", "private"].include?(visibility.strip.downcase)
+                item["visibility"] = visibility.strip.downcase
+              end
               out[full_name] = item unless item.empty?
             end
 
@@ -102,7 +106,7 @@ jobs:
               ? JSON.parse(fs.readFileSync('.github/repos.generated.json', 'utf8'))
               : {};
             console.log(
-              `Loaded per-repo description/homepage entries for ${Object.keys(repoSettings).length} repos`
+              `Loaded per-repo metadata entries for ${Object.keys(repoSettings).length} repos`
             );
             const orgRepos = await withRetry(() =>
               github.paginate(github.rest.repos.listForOrg, {
@@ -141,19 +145,12 @@ jobs:
                   );
                 }
                 console.log(`Configuring settings for: ${repoOwner}/${repo.name}`);
-                // POLICY CHANGE (2026-08-04):
-                // Visibility is intentionally NOT set here — it's owner-managed.
-                // The previous `private: !isTheprawn` line auto-flipped every
-                // non-theprawn repo back to private on every sync, which meant
-                // any manual `gh repo edit --visibility public` got reverted
-                // the following Monday. Free Actions minutes on public repos
-                // (unlimited on GitHub-hosted standard runners) were being
-                // burned instead. Use `gh repo edit <owner>/<repo>
-                // --visibility public|private` to change visibility.
                 const configured = repoSettings[`${repoOwner}/${repo.name}`] || {};
+                const expectedVisibility = configured.visibility === 'private' ? 'private' : 'public';
                 const settingsPayload = {
                   owner: repoOwner,
                   repo: repo.name,
+                  private: expectedVisibility === 'private',
                   has_issues: true,
                   has_wiki: true,
                   has_projects: true,

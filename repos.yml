@@ -1,5 +1,6 @@
 # Per-repo metadata for sourcerepo sync and SHELL compliance.
 # description/homepage are applied only when non-empty.
+# visibility defaults to public; set visibility: private only for intentional private repos.
 # topics must come from topics.yml; keep-lfs and no-config-sync are reserved sync-control topics.
 bryanseah234/bryanseah234:
   description: "GitHub profile repository for public project metadata and account-level documentation."
@@ -442,6 +443,7 @@ hongyime/spritescavenger:
 hongyime/supabasealive:
   description: "Cloudflare Worker cron that keeps Supabase projects awake with scheduled database pings."
   homepage: ""
+  visibility: private
   topics:
     - supabase
     - automation

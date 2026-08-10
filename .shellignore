@@ -12,3 +12,4 @@ tiers.yml
 .github/workflows/sync-repo-settings.yml
 tools/check_repo.py
 tools/new_repo.ps1
+skills/
