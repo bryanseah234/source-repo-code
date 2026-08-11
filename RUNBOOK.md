@@ -187,3 +187,52 @@ gh workflow run "Sync Repo Settings & General Config to All Repos" --repo hongyi
 
 The compliance workflow commits `COMPLIANCE.md` with `[skip ci]` when the report
 changes.
+
+## Workspace Scripts
+
+The root `X:\01 REPOSITORIES` batch files are launchers only. The maintained
+implementations live here:
+
+- `tools/workspace/sync_workspace.py` - clone/fetch/fast-forward only; never
+  deletes local folders.
+- `tools/workspace/push_workspace.py` - reports dirty/ahead repos; never
+  auto-commits and never bypasses hooks.
+- `tools/workspace/infer_homepages.py` - infers project homepages from live
+  GitHub metadata and GitHub Pages.
+
+From the workspace root:
+
+```powershell
+python .\sourcerepo\tools\workspace\sync_workspace.py --workspace "X:\01 REPOSITORIES"
+python .\sourcerepo\tools\workspace\push_workspace.py --workspace "X:\01 REPOSITORIES"
+```
+
+To push clean, ahead-only owned repos after reviewing the report:
+
+```powershell
+python .\sourcerepo\tools\workspace\push_workspace.py --workspace "X:\01 REPOSITORIES" --push
+```
+
+The old generic homepage `https://www.hong-yi.me` is treated as stale metadata,
+not as a project homepage. To update `repos.yml` with provable deployment URLs:
+
+```powershell
+cd "X:\01 REPOSITORIES\sourcerepo"
+python .\tools\workspace\infer_homepages.py
+python .\tools\workspace\infer_homepages.py --write
+```
+
+To also patch GitHub live homepage fields to match the inferred state:
+
+```powershell
+python .\tools\workspace\infer_homepages.py --write --apply-live
+```
+
+Homepage policy:
+
+- GitHub Pages enabled: `https://hongyime.github.io/<repo>/`
+- Vercel/custom deployment: the real deployment URL
+- No provable deployment: blank
+
+Do not set every repo homepage to `https://www.hong-yi.me`; that recreates the
+old one-size-fits-all metadata problem.

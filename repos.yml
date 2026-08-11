@@ -126,7 +126,7 @@ hongyime/gmailclient:
     - tool
 hongyime/gmaplists:
   description: "Vite and extension project for working with Google Maps list data."
-  homepage: ""
+  homepage: "https://hongyime.github.io/gmaplists/"
   topics:
     - typescript
     - browser-extension
@@ -205,7 +205,7 @@ hongyime/piixesicons:
     - tool
 hongyime/playchess:
   description: "Python chess game project with installer, move logs, and tests."
-  homepage: ""
+  homepage: "https://hongyime.github.io/playchess/"
   topics:
     - python
     - game
@@ -309,7 +309,7 @@ hongyime/sgAveroTech2021:
     - automation
 hongyime/sgBusLaoBu2021:
   description: "Singapore bus fare and transport web app with Python backend and data files."
-  homepage: ""
+  homepage: "https://hongyime.github.io/sgBusLaoBu2021/"
   topics:
     - python
     - flask
@@ -410,7 +410,7 @@ hongyime/sgSHIOK2026:
     - web
 hongyime/sgStyleSnap2025:
   description: "TypeScript web app for Singapore style snapshots with database and test assets."
-  homepage: ""
+  homepage: "https://hongyime.github.io/sgStyleSnap2025/"
   topics:
     - typescript
     - web
@@ -478,7 +478,7 @@ hongyime/swiperboxd:
     - tool
 hongyime/theprawnfeeds:
   description: "RSS reader web app with Python API, feed configuration, and static frontend assets."
-  homepage: ""
+  homepage: "https://hongyime.github.io/theprawnfeeds/"
   topics:
     - python
     - javascript
@@ -564,7 +564,7 @@ hongyime/ticketremaster-f:
     - tool
 hongyime/trexrunner:
   description: "Static browser runner game with HTML, CSS, JavaScript, and image assets."
-  homepage: ""
+  homepage: "https://hongyime.github.io/trexrunner/"
   topics:
     - static-site
     - javascript
@@ -588,7 +588,7 @@ hongyime/unifiedcollector:
     - tool
 hongyime/validateNRIC2020:
   description: "Flask and Python utilities for validating Singapore NRIC checksums."
-  homepage: ""
+  homepage: "https://hongyime.github.io/validateNRIC2020/"
   topics:
     - python
     - flask
