@@ -50,6 +50,14 @@ hongyime/ctfsolver:
     - automation
     - tool
     - web
+hongyime/ctfpawned:
+  description: "Browser-only web security puzzle set with sandboxed CTF challenges and defensive walkthroughs."
+  homepage: "https://ctfpawned.vercel.app"
+  topics:
+    - web
+    - education
+    - static-site
+    - tool
 hongyime/dejavista:
   description: "Chrome extension that tracks fashion browsing history and recommends outfits with AI."
   homepage: ""
@@ -308,6 +316,15 @@ hongyime/sgBusLaoBu2021:
     - singapore
     - data
     - web
+hongyime/sgCertWatch2026:
+  description: "Design docs for a Singapore-focused Certificate Transparency monitoring dashboard."
+  homepage: ""
+  topics:
+    - singapore
+    - data
+    - web
+    - automation
+    - tool
 hongyime/sgCampusCore2026:
   description: "Next.js and Convex campus issue-reporting network for SMU."
   homepage: ""
@@ -510,6 +527,16 @@ hongyime/theprawnredirects:
     - portfolio
     - web
     - tool
+hongyime/theprawnstatus:
+  description: "Vite React dashboard for Prawn deployment uptime and SHELL compliance health."
+  homepage: "https://theprawnstatus.vercel.app"
+  topics:
+    - react
+    - typescript
+    - web
+    - automation
+    - github-actions
+    - vercel
 hongyime/theprawnsurprise:
   description: "Vite React surprise page for The Prawn Organisation."
   homepage: ""
