@@ -69,6 +69,34 @@ jobs:
               repo_policy[full_name] = { "visibility" => normalized }
             end
             File.write(".github/repo-policy.generated.json", JSON.pretty_generate(repo_policy))
+
+            history_decisions = {}
+            if File.exist?("history-decisions.yml")
+              decisions_raw = YAML.safe_load(
+                File.read("history-decisions.yml"),
+                permitted_classes: [],
+                permitted_symbols: [],
+                aliases: false
+              ) || {}
+              accepted = decisions_raw["accepted"] || []
+              unless accepted.is_a?(Array)
+                raise "history-decisions.yml accepted must be a list"
+              end
+              accepted.each do |item|
+                next unless item.is_a?(Hash)
+                repo = item["repo"]
+                path = item["path"]
+                category = item["category"]
+                decision = item["decision"]
+                next unless repo.is_a?(String) && path.is_a?(String) && category.is_a?(String)
+                next unless decision == "accept"
+                history_decisions[[repo, path, category].join("\u0000")] = {
+                  "decision" => decision,
+                  "reason" => item["reason"].is_a?(String) ? item["reason"] : ""
+                }
+              end
+            end
+            File.write(".github/history-decisions.generated.json", JSON.pretty_generate(history_decisions))
           '
 
       - name: Clone repos and collect compliance data
@@ -141,6 +169,10 @@ jobs:
           policy_path = Path(".github/repo-policy.generated.json")
           if policy_path.is_file():
               repo_policy = json.loads(policy_path.read_text(encoding="utf-8"))
+          accepted_history = {}
+          history_decisions_path = Path(".github/history-decisions.generated.json")
+          if history_decisions_path.is_file():
+              accepted_history = json.loads(history_decisions_path.read_text(encoding="utf-8"))
 
           def expected_visibility(repo: str) -> str:
               configured = repo_policy.get(repo, {}).get("visibility")
@@ -171,6 +203,7 @@ jobs:
           fail_counts = {rule: 0 for rule in ("R1", "R2", "R3", "R4", "R5", "R6")}
           identity_rows = []
           history_rows = []
+          accepted_history_rows = []
           no_licence = []
           visibility_rows = []
           error_rows = []
@@ -217,7 +250,13 @@ jobs:
                   if str(hit.get("path", "")).startswith("history@")
               ]
               for hit in history_hits:
-                  history_rows.append((repo, hit.get("path"), hit.get("category")))
+                  path = hit.get("path")
+                  category = hit.get("category")
+                  key = "\0".join([repo, str(path), str(category)])
+                  if key in accepted_history:
+                      accepted_history_rows.append((repo, path, category))
+                  else:
+                      history_rows.append((repo, path, category))
               expected = expected_visibility(repo)
               actual = actual_visibility(item)
               if actual != "unknown" and actual != expected:
@@ -240,6 +279,14 @@ jobs:
                   lines.append(f"### {repo}")
                   current_repo = repo
               lines.append(f"- `{path}` [{category}]")
+
+          lines += ["", "## Accepted History Hits", ""]
+          current_repo = None
+          for repo, path, category in accepted_history_rows:
+              if repo != current_repo:
+                  lines.append(f"### {repo}")
+                  current_repo = repo
+              lines.append(f"- `{path}` [{category}] accepted by owner")
 
           lines += ["", "## Repos With No Licence", ""]
           for repo in no_licence:
@@ -271,6 +318,7 @@ jobs:
               "- R1-R6 failures: " + ", ".join(f"{rule}={count}" for rule, count in fail_counts.items()),
               f"- Working-tree identity hits: {len(identity_rows)}",
               f"- History hits requiring owner decision: {len(history_rows)}",
+              f"- Accepted history hits: {len(accepted_history_rows)}",
               f"- Repos with no licence: {len(no_licence)}",
               f"- Visibility drift items: {len(visibility_rows)}",
               f"- Command errors: {len(error_rows)}",
