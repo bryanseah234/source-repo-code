@@ -25,6 +25,7 @@ EXCLUDED_DIRS = {
     "_molt",
     "_old_root_scripts",
     "_shell",
+    "__pycache__",
     "Git",
     "Python",
     "Readme",
@@ -43,6 +44,10 @@ def force_remove_readonly(func, path, _):
 
 def is_git_repo(path):
     return (path / ".git").exists()
+
+
+def normalize_path(path: Path) -> Path:
+    return Path(str(path).strip().strip('"')).resolve()
 
 
 def get_readme_path(repo_path):
@@ -77,7 +82,7 @@ def main():
     parser.add_argument("--workspace", type=Path, default=Path(__file__).resolve().parents[3])
     args = parser.parse_args()
 
-    workspace = args.workspace.resolve()
+    workspace = normalize_path(args.workspace)
     readme_dir = workspace / "Readme"
 
     print("-" * 50)

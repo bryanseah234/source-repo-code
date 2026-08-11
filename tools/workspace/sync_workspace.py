@@ -43,15 +43,18 @@ def run(cmd: list[str], cwd: Path | None = None, timeout: int = 120) -> subproce
     env = os.environ.copy()
     env["GIT_TERMINAL_PROMPT"] = "0"
     env["GCM_INTERACTIVE"] = "Never"
-    return subprocess.run(
-        cmd,
-        cwd=str(cwd) if cwd else None,
-        capture_output=True,
-        text=True,
-        errors="replace",
-        env=env,
-        timeout=timeout,
-    )
+    try:
+        return subprocess.run(
+            cmd,
+            cwd=str(cwd) if cwd else None,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            env=env,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        return subprocess.CompletedProcess(cmd, 124, exc.stdout or "", f"timeout after {timeout}s")
 
 
 def gh_json(args: list[str]) -> object:
@@ -59,6 +62,10 @@ def gh_json(args: list[str]) -> object:
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip() or proc.stdout.strip())
     return json.loads(proc.stdout or "null")
+
+
+def normalize_path(path: Path) -> Path:
+    return Path(str(path).strip().strip('"')).resolve()
 
 
 def authenticated_user() -> str:
@@ -114,7 +121,7 @@ def parse_full_name(remote_url: str) -> str | None:
     return f"{owner}/{repo.removesuffix('.git')}"
 
 
-def local_repos(workspace: Path) -> dict[str, Path]:
+def local_repos(workspace: Path, command_timeout: int) -> dict[str, Path]:
     found: dict[str, Path] = {}
     candidates = [p for p in workspace.iterdir() if p.is_dir() and p.name not in EXCLUDED_DIRS]
     for first in candidates:
@@ -122,7 +129,7 @@ def local_repos(workspace: Path) -> dict[str, Path]:
         if not repo_dirs:
             repo_dirs.extend(p for p in first.iterdir() if p.is_dir() and (p / ".git").exists())
         for repo_dir in repo_dirs:
-            proc = run(["git", "remote", "get-url", "origin"], cwd=repo_dir, timeout=20)
+            proc = run(["git", "remote", "get-url", "origin"], cwd=repo_dir, timeout=command_timeout)
             if proc.returncode != 0:
                 continue
             full_name = parse_full_name(proc.stdout)
@@ -138,24 +145,24 @@ def clone_path(workspace: Path, full_name: str) -> Path:
     return workspace / owner / repo
 
 
-def is_clean(repo_dir: Path) -> bool:
-    proc = run(["git", "status", "--porcelain"], cwd=repo_dir, timeout=30)
+def is_clean(repo_dir: Path, command_timeout: int) -> bool:
+    proc = run(["git", "status", "--porcelain"], cwd=repo_dir, timeout=command_timeout)
     return proc.returncode == 0 and not proc.stdout.strip()
 
 
-def current_branch(repo_dir: Path) -> str | None:
-    proc = run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_dir, timeout=20)
+def current_branch(repo_dir: Path, command_timeout: int) -> str | None:
+    proc = run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_dir, timeout=command_timeout)
     if proc.returncode != 0:
         return None
     branch = proc.stdout.strip()
     return None if branch == "HEAD" else branch
 
 
-def sync_existing(repo_dir: Path, full_name: str, dry_run: bool) -> str:
-    branch = current_branch(repo_dir)
+def sync_existing(repo_dir: Path, full_name: str, dry_run: bool, command_timeout: int) -> str:
+    branch = current_branch(repo_dir, command_timeout)
     if not branch:
         return "skip detached"
-    if not is_clean(repo_dir):
+    if not is_clean(repo_dir, command_timeout):
         return "skip dirty"
     if dry_run:
         return "would fetch/ff"
@@ -163,7 +170,7 @@ def sync_existing(repo_dir: Path, full_name: str, dry_run: bool) -> str:
     fetch = run(["git", "fetch", "origin"], cwd=repo_dir, timeout=180)
     if fetch.returncode != 0:
         return "fetch failed"
-    remote_branch = run(["git", "rev-parse", "--verify", f"origin/{branch}"], cwd=repo_dir, timeout=20)
+    remote_branch = run(["git", "rev-parse", "--verify", f"origin/{branch}"], cwd=repo_dir, timeout=command_timeout)
     if remote_branch.returncode != 0:
         return f"skip no origin/{branch}"
     ff = run(["git", "merge", "--ff-only", f"origin/{branch}"], cwd=repo_dir, timeout=180)
@@ -173,14 +180,20 @@ def sync_existing(repo_dir: Path, full_name: str, dry_run: bool) -> str:
 
 
 def main() -> int:
+    try:
+        sys.stdout.reconfigure(line_buffering=True)
+    except AttributeError:
+        pass
+
     parser = argparse.ArgumentParser(description="Safely clone/fetch/fast-forward workspace repos.")
     parser.add_argument("--workspace", type=Path, default=Path(__file__).resolve().parents[3])
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--command-timeout", type=int, default=8, help="per-repo git command timeout in seconds")
     args = parser.parse_args()
 
-    workspace = args.workspace.resolve()
+    workspace = normalize_path(args.workspace)
     remotes = remote_repos()
-    local = local_repos(workspace)
+    local = local_repos(workspace, args.command_timeout)
 
     print(f"Workspace: {workspace}")
     print(f"Remote repos in scope: {len(remotes)}")
@@ -192,7 +205,7 @@ def main() -> int:
         full_name = repo["full_name"]
         repo_dir = local.get(full_name)
         if repo_dir:
-            result = sync_existing(repo_dir, full_name, args.dry_run)
+            result = sync_existing(repo_dir, full_name, args.dry_run, args.command_timeout)
             if result == "updated":
                 updated += 1
             else:
