@@ -181,10 +181,16 @@ def count_revs(repo_dir: Path, revspec: str, command_timeout: int) -> int | None
         return None
 
 
-def ask_choice(prompt: str, choices: set[str], default: str) -> str:
-    suffix = "/".join(sorted(choices))
-    response = input(f"{prompt} [{suffix}] default={default}: ").strip().lower()
-    return response if response in choices else default
+def ask_choice(prompt: str, options: list[tuple[str, str]], default: str) -> str:
+    print(prompt)
+    lookup: dict[str, str] = {}
+    for index, (key, description) in enumerate(options, 1):
+        marker = " default" if key == default else ""
+        print(f"  {index}. {key} - {description}{marker}")
+        lookup[str(index)] = key
+        lookup[key] = key
+    response = input("Choose number or word: ").strip().lower()
+    return lookup.get(response, default)
 
 
 def merge_origin(repo_dir: Path, branch: str) -> str:
@@ -193,7 +199,15 @@ def merge_origin(repo_dir: Path, branch: str) -> str:
         return "merged"
 
     print((merge.stderr or merge.stdout).strip()[:400])
-    choice = ask_choice("Merge conflicted. Choose: abort, local, github", {"abort", "local", "github"}, "abort")
+    choice = ask_choice(
+        "Merge conflicted.",
+        [
+            ("abort", "stop this merge and leave the repo unchanged"),
+            ("local", "resolve conflicts by keeping local file contents"),
+            ("github", "resolve conflicts by keeping GitHub file contents"),
+        ],
+        "abort",
+    )
     if choice == "local":
         run(["git", "checkout", "--ours", "."], cwd=repo_dir, timeout=120)
         run(["git", "add", "-A"], cwd=repo_dir, timeout=120)
@@ -210,11 +224,27 @@ def merge_origin(repo_dir: Path, branch: str) -> str:
 
 
 def interactive_dirty_sync(repo_dir: Path, branch: str, command_timeout: int) -> str:
-    choice = ask_choice("Dirty repo. Choose: skip, stash, local, github", {"skip", "stash", "local", "github"}, "skip")
+    choice = ask_choice(
+        "Dirty repo: local file changes are present.",
+        [
+            ("skip", "do nothing to this repo"),
+            ("stash", "stash local changes, update, then re-apply the stash"),
+            ("local", "commit local tracked changes, then try to merge GitHub"),
+            ("github", "discard local changes and match GitHub after an extra confirmation"),
+        ],
+        "skip",
+    )
     if choice == "skip":
         return "skip dirty"
     if choice == "github":
-        confirm = ask_choice("This discards local tracked changes and untracked files. Type github to confirm", {"github", "skip"}, "skip")
+        confirm = ask_choice(
+            "Confirm destructive reset: this discards local tracked changes and untracked files.",
+            [
+                ("skip", "cancel and leave this repo unchanged"),
+                ("github", "discard local files and match GitHub"),
+            ],
+            "skip",
+        )
         if confirm != "github":
             return "skip dirty"
         reset = run(["git", "reset", "--hard", f"origin/{branch}"], cwd=repo_dir, timeout=180)
@@ -274,11 +304,27 @@ def sync_existing(repo_dir: Path, full_name: str, dry_run: bool, command_timeout
 
     if not interactive:
         return "skip not fast-forward"
-    choice = ask_choice("Branch diverged. Choose: skip, merge, local, github", {"skip", "merge", "local", "github"}, "skip")
+    choice = ask_choice(
+        "Branch diverged: local commits and GitHub commits both exist.",
+        [
+            ("skip", "do nothing to this repo"),
+            ("merge", "try a normal Git merge"),
+            ("local", "keep local branch as-is"),
+            ("github", "reset local branch to GitHub after an extra confirmation"),
+        ],
+        "skip",
+    )
     if choice == "merge":
         return merge_origin(repo_dir, branch)
     if choice == "github":
-        confirm = ask_choice("This resets the branch to GitHub. Type github to confirm", {"github", "skip"}, "skip")
+        confirm = ask_choice(
+            "Confirm destructive reset: this resets the branch to GitHub.",
+            [
+                ("skip", "cancel and leave this repo unchanged"),
+                ("github", "reset local branch to GitHub"),
+            ],
+            "skip",
+        )
         if confirm != "github":
             return "skip not fast-forward"
         reset = run(["git", "reset", "--hard", f"origin/{branch}"], cwd=repo_dir, timeout=180)
