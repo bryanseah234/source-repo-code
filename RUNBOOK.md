@@ -199,12 +199,15 @@ implementations live here:
   auto-commits and never bypasses hooks.
 - `tools/workspace/infer_homepages.py` - infers project homepages from live
   GitHub metadata and GitHub Pages.
+- `tools/workspace/collect_readmes.py` - collects local README files into
+  chunked context files under the workspace `Readme/` folder.
 
 From the workspace root:
 
 ```powershell
 python .\sourcerepo\tools\workspace\sync_workspace.py --workspace "X:\01 REPOSITORIES"
 python .\sourcerepo\tools\workspace\push_workspace.py --workspace "X:\01 REPOSITORIES"
+python .\sourcerepo\tools\workspace\collect_readmes.py --workspace "X:\01 REPOSITORIES"
 ```
 
 To push clean, ahead-only owned repos after reviewing the report:
