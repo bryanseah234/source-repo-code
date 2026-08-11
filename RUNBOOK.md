@@ -30,6 +30,48 @@ The script:
 After it runs, review the `tiers.yml` and `repos.yml` diff in `sourcerepo`, then
 commit through a `shell/...` branch and PR.
 
+Before opening the PR, verify the repo starts compliant:
+
+```powershell
+python .\tools\scan_identity.py "X:\01 REPOSITORIES\example-repo" --quiet
+python .\tools\check_repo.py "X:\01 REPOSITORIES\example-repo" --json
+```
+
+If either command fails, fix the repo before publishing it as part of the
+managed estate. Do not add a repo to `tiers.yml` or `repos.yml` until its
+description, topics, licence, notice, README, and identity scan are ready.
+
+## Resume a Cut-off Session
+
+Every long-running agent run should have a progress file outside target repos,
+for example:
+
+```powershell
+X:\01 REPOSITORIES\_shell\WRAPUP-PROGRESS.md
+```
+
+When a CLI is cut off or quota-exhausted:
+
+1. Open a new CLI pointed at `X:\01 REPOSITORIES`.
+2. Say exactly which progress file to read, for example:
+
+   ```text
+   resume from X:\01 REPOSITORIES\_shell\WRAPUP-PROGRESS.md
+   ```
+
+3. Before changing files, the new CLI should verify:
+   - current repo and branch
+   - latest Git status
+   - last completed step in the progress file
+   - any explicit STOP gate or approval recorded there
+4. If the repo has `.agents/STATE.md`, read it next. If it references a handoff
+   under `.agents/handoffs/`, read that handoff before acting.
+5. Update the progress file before replying and after each meaningful step.
+
+Do not resume from chat memory alone. Treat chat summaries, tool-local memory,
+and harness-specific databases as helpful hints only; Git state plus the
+progress file plus `.agents/` are the durable record.
+
 ## Update `SHELL_IDENTITY`
 
 `SHELL_IDENTITY` is the source for the identity scanner. Never commit it and

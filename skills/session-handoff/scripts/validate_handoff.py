@@ -11,12 +11,13 @@ Checks:
 
 Usage:
     python validate_handoff.py <handoff-file>
-    python validate_handoff.py .claude/handoffs/2024-01-15-143022-auth.md
+    python validate_handoff.py .agents/handoffs/2024-01-15-143022-auth.md
 """
 
 import os
 import re
 import sys
+import importlib.util
 from pathlib import Path
 
 # Secret detection patterns
@@ -65,14 +66,14 @@ def check_required_sections(content: str) -> tuple[bool, list[str]]:
     missing = []
     for section in REQUIRED_SECTIONS:
         # Look for section header
-        pattern = rf'(?:^|\n)##?\s*{re.escape(section)}'
+        pattern = rf'(?:^|\n)#{{1,6}}\s*{re.escape(section)}'
         match = re.search(pattern, content, re.IGNORECASE)
         if not match:
             missing.append(f"{section} (missing)")
         else:
             # Check if section has meaningful content (not just placeholder)
             section_start = match.end()
-            next_section = re.search(r'\n##?\s+', content[section_start:])
+            next_section = re.search(r'\n#{{1,6}}\s+', content[section_start:])
             section_end = section_start + next_section.start() if next_section else len(content)
             section_content = content[section_start:section_end].strip()
 
@@ -87,7 +88,7 @@ def check_recommended_sections(content: str) -> list[str]:
     """Check which recommended sections are missing."""
     missing = []
     for section in RECOMMENDED_SECTIONS:
-        pattern = rf'(?:^|\n)##?\s*{re.escape(section)}'
+        pattern = rf'(?:^|\n)#{{1,6}}\s*{re.escape(section)}'
         if not re.search(pattern, content, re.IGNORECASE):
             missing.append(section)
     return missing
@@ -100,6 +101,47 @@ def scan_for_secrets(content: str) -> list[tuple[str, str]]:
         matches = re.findall(pattern, content, re.IGNORECASE)
         if matches:
             findings.append((description, f"Found {len(matches)} potential match(es)"))
+    return findings
+
+
+def find_repo_root(start: Path) -> Path:
+    """Find the nearest git worktree root without requiring git."""
+    current = start.resolve()
+    if current.is_file():
+        current = current.parent
+
+    for candidate in [current, *current.parents]:
+        if (candidate / ".git").exists():
+            return candidate
+
+    return start.resolve().parent if start.resolve().is_file() else start.resolve()
+
+
+def scan_for_identity(filepath: Path, repo_root: Path) -> list[tuple[str, str]]:
+    """Run the repo identity scanner logic on the handoff file."""
+    scanner = repo_root / "tools" / "scan_identity.py"
+    if not scanner.exists():
+        return []
+
+    try:
+        spec = importlib.util.spec_from_file_location("shell_scan_identity", scanner)
+        if spec is None or spec.loader is None:
+            return [("identity scanner", "Scanner module could not be loaded")]
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        cfg, _cfg_src = module.load_config()
+        matcher = module.Matcher(cfg)
+    except SystemExit as exc:
+        return [("identity scanner", f"Scanner failed with exit code {exc.code}")]
+    except Exception as exc:
+        return [("identity scanner", f"Scanner failed: {type(exc).__name__}")]
+
+    findings = []
+    with filepath.open("r", encoding="utf-8", errors="replace") as handle:
+        for line_number, line in enumerate(handle, 1):
+            for category, _matched_text in matcher.scan_line(line):
+                findings.append((category, f"{filepath.name}:{line_number}"))
     return findings
 
 
@@ -203,13 +245,14 @@ def validate_handoff(filepath: str) -> dict:
         return {"error": f"File not found: {filepath}"}
 
     content = path.read_text()
-    base_path = path.parent.parent.parent  # Go up from .claude/handoffs/
+    base_path = find_repo_root(path)
 
     # Run checks
     todos_clear, remaining_todos = check_todos(content)
     required_complete, missing_required = check_required_sections(content)
     missing_recommended = check_recommended_sections(content)
     secrets_found = scan_for_secrets(content)
+    identity_found = scan_for_identity(path, base_path)
     existing_files, missing_files = check_file_references(content, str(base_path))
 
     # Calculate score
@@ -229,6 +272,7 @@ def validate_handoff(filepath: str) -> dict:
         "missing_required": missing_required,
         "missing_recommended": missing_recommended,
         "secrets_found": secrets_found,
+        "identity_found": identity_found,
         "files_verified": len(existing_files),
         "files_missing": missing_files[:5],  # Limit output
     }
@@ -267,9 +311,17 @@ def print_report(result: dict):
     if not result['secrets_found']:
         print("\n[PASS] No potential secrets detected")
     else:
-        print("\n[WARN] Potential secrets detected:")
+        print("\n[BLOCK] Potential secrets detected:")
         for secret_type, detail in result['secrets_found']:
             print(f"       - {secret_type}: {detail}")
+
+    # Personal identity
+    if not result.get('identity_found'):
+        print("\n[PASS] No personal identity matches detected")
+    else:
+        print("\n[BLOCK] Personal identity matches detected:")
+        for category, location in result['identity_found']:
+            print(f"       - {category}: {location}")
 
     # File references
     if result['files_missing']:
@@ -288,11 +340,14 @@ def print_report(result: dict):
     print(f"\n{'='*60}")
 
     # Final verdict
-    if result['score'] >= 70 and not result['secrets_found']:
+    if result['score'] >= 70 and not result['secrets_found'] and not result.get('identity_found'):
         print("Verdict: READY for handoff")
         return True
     elif result['secrets_found']:
         print("Verdict: BLOCKED - Remove secrets before handoff")
+        return False
+    elif result.get('identity_found'):
+        print("Verdict: BLOCKED - Remove personal identity before handoff")
         return False
     else:
         print("Verdict: NEEDS WORK - Complete required sections")
@@ -302,7 +357,7 @@ def print_report(result: dict):
 def main():
     if len(sys.argv) < 2:
         print("Usage: python validate_handoff.py <handoff-file>")
-        print("Example: python validate_handoff.py .claude/handoffs/2024-01-15-auth.md")
+        print("Example: python validate_handoff.py .agents/handoffs/2024-01-15-auth.md")
         sys.exit(1)
 
     filepath = sys.argv[1]
