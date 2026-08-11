@@ -81,6 +81,23 @@ def iter_git_repos(workspace: Path) -> list[Path]:
     return sorted(repos, key=lambda p: str(p).lower())
 
 
+def selected(repo_dir: Path, full_name: str | None, filters: set[str]) -> bool:
+    if not filters:
+        return True
+    names = {repo_dir.name.lower()}
+    if full_name:
+        names.add(full_name.lower())
+        names.add(full_name.rsplit("/", 1)[-1].lower())
+    return bool(names & filters)
+
+
+def selected_by_folder(repo_dir: Path, filters: set[str]) -> bool:
+    if not filters:
+        return True
+    folder = repo_dir.name.lower()
+    return any(filter_value == folder or filter_value.endswith(f"/{folder}") for filter_value in filters)
+
+
 def status(repo_dir: Path, personal_owner: str, command_timeout: int) -> tuple[str, str | None]:
     remote = run(["git", "remote", "get-url", "origin"], cwd=repo_dir, timeout=command_timeout)
     full_name = parse_full_name(remote.stdout) if remote.returncode == 0 else None
@@ -129,16 +146,30 @@ def main() -> int:
     parser.add_argument("--workspace", type=Path, default=Path(__file__).resolve().parents[3])
     parser.add_argument("--push", action="store_true", help="push clean ahead-only repos")
     parser.add_argument("--command-timeout", type=int, default=8, help="per-repo git command timeout in seconds")
+    parser.add_argument("--personal-owner", help="authenticated personal GitHub owner; defaults to gh api user")
+    parser.add_argument(
+        "--only",
+        action="append",
+        default=[],
+        help="limit to a folder name, repo name, or full repo name; may be repeated",
+    )
     args = parser.parse_args()
 
     workspace = normalize_path(args.workspace)
-    personal_owner = authenticated_user()
+    personal_owner = args.personal_owner.strip() if args.personal_owner else authenticated_user()
+    filters = {item.strip().lower() for raw in args.only for item in raw.split(",") if item.strip()}
     pushed = 0
     print(f"Workspace: {workspace}")
     print("No commits are created by this tool.")
+    if filters:
+        print(f"Filter: {', '.join(sorted(filters))}")
     print("-" * 72)
     for repo_dir in iter_git_repos(workspace):
+        if not selected_by_folder(repo_dir, filters):
+            continue
         state, full_name = status(repo_dir, personal_owner, args.command_timeout)
+        if not selected(repo_dir, full_name, filters):
+            continue
         label = full_name or repo_dir.name
         print(f"[{state.upper():22}] {label} -> {repo_dir}")
         if args.push and state.startswith("push "):
