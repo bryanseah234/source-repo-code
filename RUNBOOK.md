@@ -201,6 +201,8 @@ implementations live here:
   GitHub metadata and GitHub Pages.
 - `tools/workspace/collect_readmes.py` - collects local README files into
   chunked context files under the workspace `Readme/` folder.
+- `tools/workspace/run_source_sync.ps1` - manually dispatches the idempotent
+  `sourcerepo` cross-repo sync workflow without waiting for the weekly schedule.
 
 From the workspace root:
 
@@ -209,6 +211,16 @@ python .\sourcerepo\tools\workspace\sync_workspace.py --workspace "X:\01 REPOSIT
 python .\sourcerepo\tools\workspace\push_workspace.py --workspace "X:\01 REPOSITORIES"
 python .\sourcerepo\tools\workspace\collect_readmes.py --workspace "X:\01 REPOSITORIES"
 ```
+
+To run the GitHub fan-out sync immediately:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\sourcerepo\tools\workspace\run_source_sync.ps1
+```
+
+Use `-Watch` to wait for completion, or `-NoArchived` to skip archived repos.
+The workflow is idempotent: target repos with no file/settings drift produce no
+commit and are skipped.
 
 To push clean, ahead-only owned repos after reviewing the report:
 
