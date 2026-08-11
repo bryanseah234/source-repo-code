@@ -114,7 +114,7 @@ def remote_repos() -> list[dict]:
 
 
 def parse_full_name(remote_url: str) -> str | None:
-    match = re.search(r"github\.com[:/]([^/]+)/([^/.]+)(?:\.git)?$", remote_url.strip())
+    match = re.search(r"github\.com[:/]([^/]+)/(.+?)(?:\.git)?$", remote_url.strip())
     if not match:
         return None
     owner, repo = match.groups()
