@@ -4,7 +4,8 @@ Operational notes for maintaining the repository standard from `sourcerepo`.
 
 ## Onboard a Repo
 
-Use the helper when creating a new owned repo:
+Use the helper when creating a new owned repo. It creates the GitHub repo from
+`hongyime/theprawntemplate`, then registers it in this source repo:
 
 ```powershell
 cd "X:\01 REPOSITORIES\sourcerepo"
@@ -21,14 +22,23 @@ For a showcase repo, pass `-Tier showcase -Homepage "https://..."`.
 
 The script:
 
-- creates the local repo with `README.md`, `LICENSE`, `NOTICE`, and `.gitignore`
-- commits the compliant skeleton on `main`
+- creates the local repo from `hongyime/theprawntemplate`
+- refreshes `README.md`, `LICENSE`, `NOTICE`, and `.gitignore`
+- commits the compliant project skeleton on `main`
 - creates and pushes the GitHub repo
 - applies description, homepage, and topics
 - appends the repo to `tiers.yml` and `repos.yml`
+- runs the identity scan and compliance check
 
 After it runs, review the `tiers.yml` and `repos.yml` diff in `sourcerepo`, then
 commit through a `shell/...` branch and PR.
+
+If the GitHub template is unavailable, rerun with `-NoTemplate` to use the local
+fallback scaffold.
+
+Only pass `-SeedState` when the new repo has active cross-agent work. That copies
+`.agents/STATE.template.md` to `.agents/STATE.md`. Do not seed empty state files
+for repos that are not actively being handed between agents.
 
 Before opening the PR, verify the repo starts compliant:
 
@@ -40,6 +50,32 @@ python .\tools\check_repo.py "X:\01 REPOSITORIES\example-repo" --json
 If either command fails, fix the repo before publishing it as part of the
 managed estate. Do not add a repo to `tiers.yml` or `repos.yml` until its
 description, topics, licence, notice, README, and identity scan are ready.
+
+## Maintain the Template Repo
+
+The template source lives in:
+
+```text
+tools/templates/theprawntemplate/
+```
+
+Publish it to GitHub with:
+
+```powershell
+cd "X:\01 REPOSITORIES\sourcerepo"
+pwsh -File .\tools\publish_template_repo.ps1
+```
+
+This creates or updates `hongyime/theprawntemplate`, copies the current
+`LICENSE` and `NOTICE`, and marks the GitHub repo as a template repository.
+
+The template is intentionally small. It is for teammates and collaborators to
+start cleanly, not for copying `sourcerepo` internals. Shared workflows, labels,
+security config, and agent policy still come from the normal source sync.
+
+People who create a repo from the GitHub UI should still ask a maintainer to add
+the new repo to `repos.yml` and `tiers.yml`, or rerun `tools/new_repo.ps1` for
+the official managed path.
 
 ## Resume a Cut-off Session
 

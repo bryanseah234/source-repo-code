@@ -545,6 +545,13 @@ hongyime/theprawnsurprise:
     - typescript
     - portfolio
     - web
+hongyime/theprawntemplate:
+  description: "Compliant starter template for The Prawn Organisation projects."
+  homepage: ""
+  topics:
+    - automation
+    - github-actions
+    - tool
 hongyime/ticketremaster-b:
   description: "TicketRemaster backend with services, orchestrators, API gateway, and deployment assets."
   homepage: ""
