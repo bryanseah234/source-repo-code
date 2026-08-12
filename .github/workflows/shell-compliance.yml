@@ -207,6 +207,7 @@ jobs:
           no_licence = []
           visibility_rows = []
           error_rows = []
+          readme_rows = []
 
           lines = [
               "# SHELL Compliance",
@@ -230,6 +231,16 @@ jobs:
                   cell = "pass" if state is True else "fail" if state is False else "n/a"
                   if cell == "fail":
                       fail_counts[rule] += 1
+                      if rule == "R4":
+                          gh = item.get("check", {}).get("github", {})
+                          readme_rows.append({
+                              "repo": repo,
+                              "missing": rules.get("R4", {}).get("missing", []),
+                              "description": gh.get("description", "") if isinstance(gh, dict) else "",
+                              "homepage": gh.get("homepageUrl", "") if isinstance(gh, dict) else "",
+                              "private": gh.get("isPrivate") if isinstance(gh, dict) else None,
+                              "tier": item.get("check", {}).get("tier", "unknown"),
+                          })
                   row.append(cell)
               r5_cell = "pass" if scan_ok and len(scan_hits) == 0 else "fail"
               if r5_cell == "fail":
@@ -300,6 +311,28 @@ jobs:
           for repo, error in error_rows:
               lines.append(f"- {repo}: {error}")
 
+          def readme_priority(row: dict) -> tuple[int, str]:
+              tier = row.get("tier")
+              private = row.get("private")
+              if tier == "showcase" and private is False:
+                  return (0, row["repo"])
+              if private is False:
+                  return (1, row["repo"])
+              return (2, row["repo"])
+
+          lines += ["", "## README Review Queue", ""]
+          if readme_rows:
+              lines.append("Prioritised public showcase repos first. Do not invent prose; read the code before editing.")
+              lines.append("")
+          for row in sorted(readme_rows, key=readme_priority):
+              exposure = "private" if row.get("private") is True else "public" if row.get("private") is False else "unknown"
+              missing = ", ".join(row.get("missing") or ["README standard"])
+              lines.append(f"- **{row['repo']}** ({row.get('tier', 'unknown')}, {exposure}): missing {missing}")
+              if row.get("description"):
+                  lines.append(f"  - GitHub description: {row['description']}")
+              if row.get("homepage"):
+                  lines.append(f"  - Homepage: {row['homepage']}")
+
           lines += ["", "## Current Descriptions", ""]
           for item in results:
               desc = item.get("check", {}).get("github", {}).get("description") or ""
@@ -321,6 +354,7 @@ jobs:
               f"- Accepted history hits: {len(accepted_history_rows)}",
               f"- Repos with no licence: {len(no_licence)}",
               f"- Visibility drift items: {len(visibility_rows)}",
+              f"- README review queue items: {len(readme_rows)}",
               f"- Command errors: {len(error_rows)}",
               "",
               "See `COMPLIANCE.md` for the full matrix. Matched identity values are never included.",
@@ -337,6 +371,12 @@ jobs:
               issue_lines += ["", "## Command Errors", ""]
               for repo, error in error_rows:
                   issue_lines.append(f"- {repo}: {error}")
+          if readme_rows:
+              issue_lines += ["", "## README Review Queue", ""]
+              for row in sorted(readme_rows, key=readme_priority)[:25]:
+                  exposure = "private" if row.get("private") is True else "public" if row.get("private") is False else "unknown"
+                  missing = ", ".join(row.get("missing") or ["README standard"])
+                  issue_lines.append(f"- {row['repo']} ({row.get('tier', 'unknown')}, {exposure}): missing {missing}")
           Path(".github/compliance-issue.md").write_text("\n".join(issue_lines) + "\n", encoding="utf-8")
           Path(".github/compliance-issue-state").write_text("open\n" if issue_needed else "close\n", encoding="utf-8")
           PY

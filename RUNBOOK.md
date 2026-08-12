@@ -4,8 +4,15 @@ Operational notes for maintaining the repository standard from `sourcerepo`.
 
 ## Onboard a Repo
 
-Use the helper when creating a new owned repo. It creates the GitHub repo from
-`hongyime/theprawntemplate`, then registers it in this source repo:
+Easiest path: open a **New repo request** issue in `sourcerepo`.
+
+The issue form asks for repo name, description, tier, topics, homepage, and
+visibility. GitHub Actions validates the request and opens a PR updating
+`repos.yml` and `tiers.yml`, so you do not need to remember the YAML format.
+
+If you want the local repo created immediately too, use the helper. It creates
+the GitHub repo from `hongyime/theprawntemplate`, then registers it in this
+source repo:
 
 ```powershell
 cd "X:\01 REPOSITORIES\sourcerepo"
@@ -74,8 +81,30 @@ start cleanly, not for copying `sourcerepo` internals. Shared workflows, labels,
 security config, and agent policy still come from the normal source sync.
 
 People who create a repo from the GitHub UI should still ask a maintainer to add
-the new repo to `repos.yml` and `tiers.yml`, or rerun `tools/new_repo.ps1` for
-the official managed path.
+the new repo to `repos.yml` and `tiers.yml`. The easiest way is to open a
+**New repo request** issue in this repo; the workflow prepares the metadata PR.
+
+## README Cleanup
+
+The weekly compliance workflow maintains a README review queue in both
+`COMPLIANCE.md` and the managed **SHELL compliance drift** issue.
+
+Use that queue instead of trying to remember which repos need README work. It
+prioritises public showcase repos first and lists the missing README checks,
+current GitHub description, and homepage.
+
+Do not auto-generate README prose blindly. Read the actual repo code first,
+preserve useful existing text, then open a normal PR to that repo.
+
+## Add a Supabase Keepalive Project
+
+Open an **Add Supabase keepalive project** issue in `hongyime/supabasealive`.
+
+The issue form asks for the project name, Supabase ref, and optional Worker
+secret env name. GitHub Actions validates the request and opens a PR against
+`supabasealive`. Never paste anon keys, service-role keys, or passwords into the
+issue; the workflow comment gives the exact `wrangler secret put ...` command to
+run after the PR merges.
 
 ## Resume a Cut-off Session
 

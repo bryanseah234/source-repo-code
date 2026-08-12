@@ -1,0 +1,210 @@
+name: New Repo Request
+
+on:
+  issues:
+    types: [opened, edited]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Issue number to process
+        required: true
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: new-repo-request-${{ github.event.issue.number || inputs.issue }}
+  cancel-in-progress: true
+
+jobs:
+  prepare-pr:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'repo-onboarding')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Process request
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue }}
+          REPO_NAME: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          repo_name = os.environ["REPO_NAME"]
+          issue_number = os.environ["ISSUE_NUMBER"]
+
+          issue = json.loads(subprocess.check_output([
+              "gh", "issue", "view", issue_number, "--repo", repo_name, "--json", "body,title"
+          ], text=True))
+          body = issue.get("body") or ""
+
+          def field(label: str) -> str:
+              pattern = rf"### {re.escape(label)}\s*\n+(.+?)(?=\n### |\Z)"
+              match = re.search(pattern, body, re.S)
+              return match.group(1).strip() if match else ""
+
+          owner = field("Owner") or "hongyime"
+          name = field("Repo name")
+          description = " ".join(field("Description").split())
+          tier = (field("Tier") or "standard").lower()
+          homepage = field("Homepage").strip()
+          topics = [t.strip().lower() for t in re.split(r"[,\\n]", field("Topics")) if t.strip()]
+          visibility = (field("Visibility") or "public").lower()
+          seed_state = (field("Seed MOLT state?") or "no").lower()
+          full_name = f"{owner}/{name}"
+
+          errors = []
+          if owner != "hongyime":
+              errors.append("Owner must be hongyime for GitHub issue onboarding. Use tools/new_repo.ps1 locally for personal repos.")
+          if not re.fullmatch(r"[A-Za-z0-9._-]+", name or ""):
+              errors.append("Repo name must contain only letters, numbers, dots, underscores, or hyphens.")
+          if not (1 <= len(description) <= 120):
+              errors.append("Description must be 1-120 characters.")
+          if tier not in {"standard", "showcase"}:
+              errors.append("Tier must be standard or showcase.")
+          if visibility not in {"public", "private"}:
+              errors.append("Visibility must be public or private.")
+          if tier == "showcase" and not homepage:
+              errors.append("Showcase repos need a homepage.")
+          if not (3 <= len(topics) <= 6):
+              errors.append("Provide 3-6 topics.")
+
+          allowed = set()
+          in_topics = False
+          for line in Path("topics.yml").read_text(encoding="utf-8").splitlines():
+              if line.strip() == "topics:":
+                  in_topics = True
+                  continue
+              if re.match(r"^[A-Za-z_-]+:\s*$", line):
+                  in_topics = False
+              if in_topics:
+                  match = re.match(r"\s*-\s+(.+?)\s*$", line)
+                  if match:
+                      allowed.add(match.group(1))
+          invalid = [topic for topic in topics if topic not in allowed]
+          if invalid:
+              errors.append("Topics not in topics.yml: " + ", ".join(invalid))
+
+          repos_yml = Path("repos.yml")
+          tiers_yml = Path("tiers.yml")
+          if re.search(rf"(?m)^{re.escape(full_name)}:\s*$", repos_yml.read_text(encoding="utf-8")):
+              errors.append(f"{full_name} already exists in repos.yml.")
+          if re.search(rf"(?m)^\s*-\s+{re.escape(full_name)}\s*$", tiers_yml.read_text(encoding="utf-8")):
+              errors.append(f"{full_name} already exists in tiers.yml.")
+
+          if errors:
+              Path(".github/new-repo-comment.md").write_text(
+                  "New repo request could not be prepared:\n\n" + "\n".join(f"- {e}" for e in errors) + "\n",
+                  encoding="utf-8",
+              )
+              Path(".github/new-repo-ready").write_text("no\n", encoding="utf-8")
+              raise SystemExit(0)
+
+          tiers_lines = tiers_yml.read_text(encoding="utf-8").splitlines()
+          insert_at = len(tiers_lines)
+          for i, line in enumerate(tiers_lines):
+              if line == f"{tier}:":
+                  insert_at = i + 1
+                  while insert_at < len(tiers_lines) and re.match(r"\s*-\s+", tiers_lines[insert_at]):
+                      insert_at += 1
+                  break
+          tiers_lines.insert(insert_at, f"  - {full_name}")
+          tiers_yml.write_text("\n".join(tiers_lines).rstrip() + "\n", encoding="utf-8")
+
+          entry = [
+              f"{full_name}:",
+              f'  description: "{description}"',
+              f'  homepage: "{homepage}"',
+          ]
+          if visibility == "private":
+              entry.append("  visibility: private")
+          entry.append("  topics:")
+          entry.extend(f"    - {topic}" for topic in topics)
+          repos_yml.write_text(repos_yml.read_text(encoding="utf-8").rstrip() + "\n" + "\n".join(entry) + "\n", encoding="utf-8")
+
+          command = [
+              'cd "X:\\01 REPOSITORIES\\sourcerepo"',
+              "pwsh -File .\\tools\\new_repo.ps1 `",
+              f'  -Name "{name}" `',
+              f'  -Owner "{owner}" `',
+              f'  -Description "{description}" `',
+              f'  -Tier "{tier}" `',
+              "  -Topics " + ",".join(topics) + " `",
+              '  -RepoRoot "X:\\01 REPOSITORIES"',
+          ]
+          if homepage:
+              command.insert(-1, f'  -Homepage "{homepage}" `')
+          if visibility == "private":
+              command.insert(-1, "  -Private `")
+          if seed_state == "yes":
+              command.insert(-1, "  -SeedState `")
+          Path(".github/new-repo-comment.md").write_text(
+              f"Prepared metadata PR for `{full_name}`.\n\n"
+              "To create the repository locally and on GitHub with the official helper, run:\n\n"
+              "```powershell\n" + "\n".join(command) + "\n```\n\n"
+              "If you already created it with the GitHub template UI, merge the PR and run the source sync.\n",
+              encoding="utf-8",
+          )
+          Path(".github/new-repo-ready").write_text("yes\n", encoding="utf-8")
+          PY
+
+      - name: Comment if invalid
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue }}
+        shell: bash
+        run: |
+          if [ ! -f .github/new-repo-ready ]; then
+            exit 0
+          fi
+          if [ "$(cat .github/new-repo-ready)" = "no" ]; then
+            gh issue comment "$ISSUE_NUMBER" --body-file .github/new-repo-comment.md
+            exit 0
+          fi
+
+      - name: Open pull request
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f .github/new-repo-ready ]; then
+            exit 0
+          fi
+          if [ "$(cat .github/new-repo-ready)" != "yes" ]; then
+            exit 0
+          fi
+          branch="shell/new-repo-request-${ISSUE_NUMBER}"
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git switch -c "$branch"
+          git add repos.yml tiers.yml
+          if [ -z "$(git status --porcelain repos.yml tiers.yml)" ]; then
+            gh issue comment "$ISSUE_NUMBER" --body "No metadata changes are needed for this request."
+            exit 0
+          fi
+          git commit -m "chore(shell): register repo from request #${ISSUE_NUMBER}"
+          git push -u origin "$branch" --force-with-lease
+          pr_url="$(gh pr list --head "$branch" --state open --json url --jq '.[0].url // empty')"
+          if [ -z "$pr_url" ]; then
+            pr_url="$(gh pr create --title "chore(shell): register repo request #${ISSUE_NUMBER}" --body "Closes #${ISSUE_NUMBER}" --base main --head "$branch")"
+          else
+            gh pr edit "$pr_url" --title "chore(shell): register repo request #${ISSUE_NUMBER}" --body "Closes #${ISSUE_NUMBER}"
+          fi
+          {
+            cat .github/new-repo-comment.md
+            printf '\nPR: %s\n' "$pr_url"
+          } > .github/new-repo-final-comment.md
+          gh issue comment "$ISSUE_NUMBER" --body-file .github/new-repo-final-comment.md
