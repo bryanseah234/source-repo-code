@@ -410,5 +410,12 @@ jobs:
             git config user.name "GitHub Actions Compliance"
             git add COMPLIANCE.md
             git commit -m "chore(shell): update compliance report [skip ci]"
-            git push
+            branch="${GITHUB_REF_NAME:-main}"
+            for attempt in 1 2 3; do
+              if git push origin "HEAD:${branch}"; then
+                exit 0
+              fi
+              git pull --rebase origin "$branch"
+            done
+            git push origin "HEAD:${branch}"
           fi

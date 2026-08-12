@@ -48,7 +48,7 @@ jobs:
           body = issue.get("body") or ""
 
           def field(label: str) -> str:
-              pattern = rf"### {re.escape(label)}\s*\n+(.+?)(?=\n### |\Z)"
+              pattern = rf"### {re.escape(label)}\s*\n(.*?)(?=\n### |\Z)"
               match = re.search(pattern, body, re.S)
               return match.group(1).strip() if match else ""
 
