@@ -294,18 +294,24 @@ class Matcher:
 # walking
 # --------------------------------------------------------------------------
 
-def should_skip(path: Path, root: Path, generated: list[str]) -> bool:
-    rel = path.relative_to(root).as_posix()
-    if any(part in SKIP_DIRS for part in path.parts):
-        return True
-    if path.name in SKIP_NAMES or path.suffix.lower() in SKIP_SUFFIXES:
-        return True
+def generated_match(rel: str, generated: list[str]) -> bool:
     for g in generated:
         g = g.strip().rstrip("/")
         if not g:
             continue
         if rel == g or rel.startswith(g + "/") or Path(rel).match(g):
             return True
+    return False
+
+
+def should_skip(path: Path, root: Path, generated: list[str]) -> bool:
+    rel = path.relative_to(root).as_posix()
+    if any(part in SKIP_DIRS for part in path.parts):
+        return True
+    if path.name in SKIP_NAMES or path.suffix.lower() in SKIP_SUFFIXES:
+        return True
+    if generated_match(rel, generated):
+        return True
     try:
         if path.stat().st_size > MAX_BYTES:
             return True
@@ -335,7 +341,7 @@ def scan_tree(root: Path, matcher: Matcher, generated: list[str]) -> list[Hit]:
     return hits
 
 
-def scan_history(root: Path, matcher: Matcher) -> list[Hit]:
+def scan_history(root: Path, matcher: Matcher, generated: list[str]) -> list[Hit]:
     """Report-only scan of committed history. Never rewrites anything."""
     try:
         out = subprocess.run(
@@ -348,11 +354,19 @@ def scan_history(root: Path, matcher: Matcher) -> list[Hit]:
         return []
     hits: list[Hit] = []
     commit = "?"
+    current_file = ""
     seen: set[tuple[str, str]] = set()
     for line in out.stdout.splitlines():
         if line.startswith("commit "):
             commit = line.split()[1][:9]
+            current_file = ""
+        elif line.startswith("+++ b/"):
+            current_file = line[6:]
+        elif line.startswith("+++ /dev/null"):
+            current_file = ""
         elif line.startswith("+") and not line.startswith("+++"):
+            if current_file and generated_match(current_file, generated):
+                continue
             for cat, raw in matcher.scan_line(line[1:]):
                 key = (commit, raw)
                 if key in seen:
@@ -399,7 +413,7 @@ def main() -> int:
 
     hits = scan_tree(root, matcher, generated)
     if args.history:
-        hits += scan_history(root, matcher)
+        hits += scan_history(root, matcher, generated)
 
     if args.json:
         print(json.dumps({
