@@ -48,8 +48,8 @@ jobs:
           body = issue.get("body") or ""
 
           def field(label: str) -> str:
-              pattern = rf"### {re.escape(label)}\s*\n(.*?)(?=\n### |\Z)"
-              match = re.search(pattern, body, re.S)
+              pattern = rf"^### {re.escape(label)}[ \t]*\r?\n(.*?)(?=\r?\n### |\Z)"
+              match = re.search(pattern, body, re.S | re.M)
               return match.group(1).strip() if match else ""
 
           owner = field("Owner") or "hongyime"
