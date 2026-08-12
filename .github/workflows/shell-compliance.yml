@@ -390,16 +390,20 @@ jobs:
           title="SHELL compliance drift"
           label="shell-compliance"
           gh label create "$label" --color "B60205" --description "Managed SHELL compliance issue" 2>/dev/null || true
-          number="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label "$label" --json number --jq '.[0].number // empty')"
+          open_number="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label "$label" --json number --jq '.[0].number // empty')"
+          any_number="$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --label "$label" --json number --jq '.[0].number // empty')"
           state="$(cat .github/compliance-issue-state)"
           if [ "$state" = "open" ]; then
-            if [ -n "$number" ]; then
-              gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --title "$title" --body-file .github/compliance-issue.md
+            if [ -n "$open_number" ]; then
+              gh issue edit "$open_number" --repo "$GITHUB_REPOSITORY" --title "$title" --body-file .github/compliance-issue.md
             else
               gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file .github/compliance-issue.md --label "$label"
             fi
-          elif [ -n "$number" ]; then
-            gh issue close "$number" --repo "$GITHUB_REPOSITORY" --comment "Compliance drift resolved by latest weekly report."
+          elif [ -n "$open_number" ]; then
+            gh issue edit "$open_number" --repo "$GITHUB_REPOSITORY" --title "$title" --body-file .github/compliance-issue.md
+            gh issue close "$open_number" --repo "$GITHUB_REPOSITORY" --comment "Compliance drift resolved by latest weekly report."
+          elif [ -n "$any_number" ]; then
+            gh issue edit "$any_number" --repo "$GITHUB_REPOSITORY" --title "$title" --body-file .github/compliance-issue.md
           fi
 
       - name: Commit compliance report
