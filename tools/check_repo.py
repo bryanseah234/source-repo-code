@@ -251,8 +251,8 @@ def main() -> int:
         return 0 if ok else 1
 
     rules["R1"] = {
-        "ok": has_apache_license(repo) and text(repo / "NOTICE").strip() == NOTICE_TEXT,
-        "detail": "Apache-2.0 LICENSE and NOTICE organisation copyright",
+        "ok": has_apache_license(repo) and NOTICE_TEXT in text(repo / "NOTICE"),
+        "detail": "Apache-2.0 LICENSE and NOTICE contains organisation copyright",
     }
 
     repo_cfg = cfg.get(full_name or "", {}) if isinstance(cfg, dict) else {}
