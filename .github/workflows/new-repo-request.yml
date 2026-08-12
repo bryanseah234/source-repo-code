@@ -57,7 +57,7 @@ jobs:
           description = " ".join(field("Description").split())
           tier = (field("Tier") or "standard").lower()
           homepage = field("Homepage").strip()
-          topics = [t.strip().lower() for t in re.split(r"[,\\n]", field("Topics")) if t.strip()]
+          topics = [t.strip().lower() for t in re.split(r"[,\n]", field("Topics")) if t.strip()]
           visibility = (field("Visibility") or "public").lower()
           seed_state = (field("Seed MOLT state?") or "no").lower()
           full_name = f"{owner}/{name}"
