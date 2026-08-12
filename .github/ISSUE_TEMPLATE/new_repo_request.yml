@@ -1,0 +1,78 @@
+name: New repo request
+description: Register a new owned repo in SHELL metadata
+title: "New repo: "
+labels:
+  - repo-onboarding
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when you created a repo from `hongyime/theprawntemplate` in the GitHub UI, or when you want GitHub Actions to prepare the `repos.yml` / `tiers.yml` registration PR.
+
+        Do not paste secrets or personal details here.
+  - type: input
+    id: owner
+    attributes:
+      label: Owner
+      description: GitHub owner for managed team repos.
+      placeholder: hongyime
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: Repo name
+      description: Repository name only, not owner/name.
+      placeholder: example-repo
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Real project description, 1-120 characters.
+      placeholder: Short real description of what this repo does.
+    validations:
+      required: true
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Tier
+      options:
+        - standard
+        - showcase
+    validations:
+      required: true
+  - type: input
+    id: homepage
+    attributes:
+      label: Homepage
+      description: Required for showcase repos. Leave blank for standard repos without a deployment.
+      placeholder: https://example.com
+  - type: input
+    id: topics
+    attributes:
+      label: Topics
+      description: 3-6 comma-separated topics from topics.yml.
+      placeholder: python, tool, automation
+    validations:
+      required: true
+  - type: dropdown
+    id: visibility
+    attributes:
+      label: Visibility
+      options:
+        - public
+        - private
+    validations:
+      required: true
+  - type: dropdown
+    id: seed_state
+    attributes:
+      label: Seed MOLT state?
+      description: Only choose yes for active cross-agent work.
+      options:
+        - "no"
+        - "yes"
+    validations:
+      required: true
