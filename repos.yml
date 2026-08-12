@@ -626,3 +626,10 @@ hongyime/youtubepublisher:
     - automation
     - api
     - tool
+hongyime/smoke-test-repo-request-20260812d:
+  description: "Disposable smoke test for the repo request workflow."
+  homepage: ""
+  topics:
+    - python
+    - tool
+    - automation
