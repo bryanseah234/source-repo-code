@@ -106,6 +106,27 @@ After merging the reconcile PR, run the normal source sync if you want shared
 files and settings applied immediately. Otherwise the weekly sync will pick it
 up.
 
+## Local Workspace Helpers
+
+The root `X:\01 REPOSITORIES` `.bat` files are convenience wrappers around
+tracked tools in this repo:
+
+- `02 RunSync.bat`: calls `tools/workspace/sync_workspace.py`
+- `03 RunPush.bat`: calls `tools/workspace/push_workspace.py`
+- `05 InferHomepages.bat`: calls `tools/workspace/infer_homepages.py`
+- `06 RunSourceSync.bat`: calls `tools/workspace/run_source_sync.ps1`
+
+Use `02 RunSync.bat` after the GitHub fan-out sync. It clones missing in-scope
+repos and fast-forwards clean local branches. It does not delete repos and it
+skips dirty, detached, diverged, external, or slow repos.
+
+Use `03 RunPush.bat` before leaving a machine. The default action is report-only.
+It only pushes clean ahead-only repos after explicit confirmation, and it never
+creates commits.
+
+Use `06 RunSourceSync.bat` when you want `sourcerepo` to push shared files and
+settings outward now instead of waiting for the weekly schedule.
+
 ## README Cleanup
 
 The weekly compliance workflow maintains a README review queue in both

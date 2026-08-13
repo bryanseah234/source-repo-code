@@ -122,10 +122,19 @@ gh workflow run "Auto-merge Bot PRs" --repo hongyime/sourcerepo
 
 ## Local sync (X: drive)
 
-Two scripts on the X:\01 REPOSITORIES root drive user machines pull all repos locally including archived ones (read-only ops are safe on archived).
+The `X:\01 REPOSITORIES` root has small `.bat` wrappers for local workspace
+maintenance. They call the tracked Python helpers in `tools/workspace/`.
 
-- `02 RunSync.bat` → runs `sync_repos.py` — clones missing repos, pulls current branch
-- `03 RunPush.bat` → runs `push_repos.py` — auto-commits local changes, pushes
+- `02 RunSync.bat` → runs `tools/workspace/sync_workspace.py`; clones missing
+  in-scope repos and fast-forwards clean local branches only.
+- `03 RunPush.bat` → runs `tools/workspace/push_workspace.py`; reports clean
+  ahead-only repos, then pushes them only after explicit confirmation. It never
+  creates commits.
+- `06 RunSourceSync.bat` → triggers the GitHub Actions fan-out sync from
+  `sourcerepo`.
+
+Both local pull/push helpers are repeatable. Dirty, detached, behind, diverged,
+external, or slow repos are reported and skipped rather than overwritten.
 
 ## Retry and failure behavior
 
