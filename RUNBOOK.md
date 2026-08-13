@@ -159,6 +159,30 @@ Do not resume from chat memory alone. Treat chat summaries, tool-local memory,
 and harness-specific databases as helpful hints only; Git state plus the
 progress file plus `.agents/` are the durable record.
 
+## MOLT Team Contract
+
+MOLT is for shared project continuity. The committed files are intentionally
+small:
+
+- `.agents/STATE.md`: current task, status, blockers, and next steps
+- `.agents/JOURNAL.md`: dated decisions and rationale
+- `.agents/handoffs/`: timestamped resume notes for longer handoffs
+
+These files are committed and may be public, so do not put secrets, personal
+details, customer data, private strategy, local credentials, or private machine
+state in them. Write enough for a teammate or a different CLI to continue the
+work, not a private transcript of everything that happened.
+
+For team repos, prefer:
+
+- linked issues, PRs, commits, and branch names
+- neutral summaries of decisions
+- reproducible commands that do not include secrets
+- one handoff file per substantial handoff
+
+Avoid using `.agents/STATE.md` as a long log. Keep it short, update it to the
+latest truth, and move durable history into `JOURNAL.md` or a handoff file.
+
 ## Update `SHELL_IDENTITY`
 
 `SHELL_IDENTITY` is the source for the identity scanner. Never commit it and
