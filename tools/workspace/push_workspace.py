@@ -133,6 +133,8 @@ def status(repo_dir: Path, personal_owner: str, command_timeout: int) -> tuple[s
     ahead = run(["git", "rev-list", "--count", f"{compare_ref}..HEAD"], cwd=repo_dir, timeout=command_timeout)
     behind = run(["git", "rev-list", "--count", f"HEAD..{compare_ref}"], cwd=repo_dir, timeout=command_timeout)
     if ahead.returncode != 0 or behind.returncode != 0:
+        if ahead.returncode == 124 or behind.returncode == 124:
+            return f"skip rev-list timeout {command_timeout}s", full_name
         return "skip rev-list failed", full_name
     ahead_n = int((ahead.stdout or "0").strip() or "0")
     behind_n = int((behind.stdout or "0").strip() or "0")
