@@ -119,12 +119,19 @@ def status(repo_dir: Path, personal_owner: str, command_timeout: int) -> tuple[s
     if dirty.stdout.strip():
         return "dirty - commit manually", full_name
 
+    branch_name = branch.stdout.strip()
     upstream = run(["git", "rev-parse", "--abbrev-ref", "@{u}"], cwd=repo_dir, timeout=command_timeout)
     if upstream.returncode != 0:
-        return "skip no upstream", full_name
+        fallback_ref = f"origin/{branch_name}"
+        fallback = run(["git", "rev-parse", "--verify", fallback_ref], cwd=repo_dir, timeout=command_timeout)
+        if fallback.returncode != 0:
+            return f"skip no origin/{branch_name}", full_name
+        compare_ref = fallback_ref
+    else:
+        compare_ref = upstream.stdout.strip()
 
-    ahead = run(["git", "rev-list", "--count", "@{u}..HEAD"], cwd=repo_dir, timeout=command_timeout)
-    behind = run(["git", "rev-list", "--count", "HEAD..@{u}"], cwd=repo_dir, timeout=command_timeout)
+    ahead = run(["git", "rev-list", "--count", f"{compare_ref}..HEAD"], cwd=repo_dir, timeout=command_timeout)
+    behind = run(["git", "rev-list", "--count", f"HEAD..{compare_ref}"], cwd=repo_dir, timeout=command_timeout)
     if ahead.returncode != 0 or behind.returncode != 0:
         return "skip rev-list failed", full_name
     ahead_n = int((ahead.stdout or "0").strip() or "0")
@@ -134,6 +141,14 @@ def status(repo_dir: Path, personal_owner: str, command_timeout: int) -> tuple[s
     if ahead_n:
         return f"push {ahead_n}", full_name
     return "clean", full_name
+
+
+def push_current_branch(repo_dir: Path, command_timeout: int) -> subprocess.CompletedProcess[str]:
+    branch = run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_dir, timeout=command_timeout)
+    if branch.returncode != 0 or branch.stdout.strip() == "HEAD":
+        return subprocess.CompletedProcess(["git", "push"], 1, "", "not on a branch")
+    branch_name = branch.stdout.strip()
+    return run(["git", "push", "-u", "origin", f"HEAD:{branch_name}"], cwd=repo_dir, timeout=300)
 
 
 def main() -> int:
@@ -173,7 +188,7 @@ def main() -> int:
         label = full_name or repo_dir.name
         print(f"[{state.upper():22}] {label} -> {repo_dir}")
         if args.push and state.startswith("push "):
-            proc = run(["git", "push"], cwd=repo_dir, timeout=300)
+            proc = push_current_branch(repo_dir, args.command_timeout)
             if proc.returncode == 0:
                 pushed += 1
                 print(f"  pushed {label}")
