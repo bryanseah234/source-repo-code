@@ -80,9 +80,31 @@ The template is intentionally small. It is for teammates and collaborators to
 start cleanly, not for copying `sourcerepo` internals. Shared workflows, labels,
 security config, and agent policy still come from the normal source sync.
 
-People who create a repo from the GitHub UI should still ask a maintainer to add
-the new repo to `repos.yml` and `tiers.yml`. The easiest way is to open a
-**New repo request** issue in this repo; the workflow prepares the metadata PR.
+People who create a repo from the GitHub UI can either open a **New repo
+request** issue immediately or let **Repo Reconcile** discover it and prepare the
+metadata PR.
+
+## Reconcile Repos Created Outside sourcerepo
+
+If you create a repo directly in GitHub, from the template UI, or from another
+tool, do not hand-edit metadata from memory.
+
+Run **Repo Reconcile** from the Actions tab, or wait for its daily schedule. It
+discovers owned repos, compares them with `repos.yml` and `tiers.yml`, then opens
+or updates one PR named `chore(shell): reconcile repo metadata`.
+
+The reconciler uses safe defaults:
+
+- new repos are added as `standard`, not `showcase`
+- live GitHub description, homepage, topics, and visibility are copied when
+  present
+- topics not in `topics.yml` are ignored
+- MOLT state is not seeded automatically
+- stale and duplicate metadata is reported for review, not deleted
+
+After merging the reconcile PR, run the normal source sync if you want shared
+files and settings applied immediately. Otherwise the weekly sync will pick it
+up.
 
 ## README Cleanup
 
