@@ -15,10 +15,12 @@ SYNC_ROOT="$(mktemp -d)"
 FAILED_REPOS=()
 PUSH_FAILED_REPOS=()
 REARCHIVE_FAILED_REPOS=()
+declare -A CASE_PATHS_BY_LOWER=()
+CASE_PATHS_READY=false
 
 # Combined repo list: hongyime org repos + personal-account owned repos.
-# Personal repos are the profile README + Pages site (kept on bryanseah234
-# because GitHub's magic profile/pages only render at the matching username
+# Personal repos are the profile README + Pages site (kept under the personal
+# account because GitHub's magic profile/pages only render at the matching user
 # path). Any future personal-account repos are picked up automatically.
 REPOS_JSON="$( { \
   gh api --paginate "orgs/hongyime/repos?per_page=100"; \
@@ -84,17 +86,34 @@ force_stage_path() {
   fi
 }
 
-case_conflicting_paths() {
-  local dst="$1"
-  local lower_dst
-  lower_dst="$(printf '%s' "$dst" | tr '[:upper:]' '[:lower:]')"
+build_case_path_index() {
+  CASE_PATHS_BY_LOWER=()
   while IFS= read -r path; do
-    local lower_path
-    lower_path="$(printf '%s' "$path" | tr '[:upper:]' '[:lower:]')"
-    if [ "$lower_path" = "$lower_dst" ] && [ "$path" != "$dst" ]; then
-      printf '%s\n' "$path"
+    local lower_path="${path,,}"
+    if [ -n "${CASE_PATHS_BY_LOWER[$lower_path]+x}" ]; then
+      CASE_PATHS_BY_LOWER[$lower_path]+=$'\n'"$path"
+    else
+      CASE_PATHS_BY_LOWER[$lower_path]="$path"
     fi
   done < <(git ls-files)
+  CASE_PATHS_READY=true
+}
+
+case_conflicting_paths() {
+  local dst="$1"
+  local lower_dst="${dst,,}"
+  if [ "$CASE_PATHS_READY" != "true" ]; then
+    build_case_path_index
+  fi
+
+  local paths="${CASE_PATHS_BY_LOWER[$lower_dst]-}"
+  [ -z "$paths" ] && return 0
+
+  while IFS= read -r path; do
+    if [ "$path" != "$dst" ]; then
+      printf '%s\n' "$path"
+    fi
+  done <<< "$paths"
 }
 
 remove_case_conflicts_for() {
@@ -259,6 +278,7 @@ while read -r repo; do
     cd "$WORKDIR" || exit 1
     continue
   }
+  CASE_PATHS_READY=false
 
   # ── Per-repo opt-out via GitHub topics ────────────────────────────────
   # Repos can opt out of specific sync items by setting topics:

@@ -211,9 +211,8 @@ jobs:
         run: |
           # gh secret set works on archived repos without needing to unarchive.
           # Combine hongyime org repos AND personal-account repos (direct owner).
-          # Personal repos live under bryanseah234/* — currently just the profile
-          # README repo + the .github.io Pages site — but any future personal
-          # repos will get swept up too.
+          # Personal repos currently include the profile README and Pages site,
+          # and any future personal-account repos will get swept up too.
           { \
             gh api --paginate "orgs/hongyime/repos?per_page=100" --jq '.[] | select(.disabled==false) | .full_name'; \
             gh api --paginate "user/repos?per_page=100&affiliation=owner" --jq '.[] | select(.disabled==false and .fork==false and (.owner.login != "hongyime")) | .full_name'; \
@@ -225,6 +224,7 @@ jobs:
   force-sync-general-config:
     runs-on: ubuntu-latest
     needs: propagate-secrets
+    timeout-minutes: 120
     env:
       GH_PAT: ${{ secrets.GH_PAT }}
       INCLUDE_ARCHIVED: ${{ github.event_name == 'schedule' && 'true' || inputs.include_archived }}
