@@ -18,4 +18,9 @@
 
 If the repo uses cross-agent state, it lives in `.agents/STATE.md` and
 `.agents/handoffs/`. These files may be public in public repos, so keep them
-professional and free of secrets.
+professional and free of secrets, personal details, private customer data, and
+private notes.
+
+Use `.agents/STATE.md` for the latest short status only. Use
+`.agents/JOURNAL.md` for dated decisions, and timestamped files in
+`.agents/handoffs/` for longer handoffs.
