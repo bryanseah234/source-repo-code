@@ -116,6 +116,13 @@ tracked tools in this repo:
 - `05 InferHomepages.bat`: calls `tools/workspace/infer_homepages.py`
 - `06 RunSourceSync.bat`: calls `tools/workspace/run_source_sync.ps1`
 
+Install or refresh those root wrappers from the tracked templates:
+
+```powershell
+cd "X:\01 REPOSITORIES\sourcerepo"
+pwsh -File .\tools\workspace\install_root_bats.ps1
+```
+
 Use `02 RunSync.bat` after the GitHub fan-out sync. It clones missing in-scope
 repos and fast-forwards clean local branches. It does not delete repos and it
 skips dirty, detached, diverged, external, or slow repos.

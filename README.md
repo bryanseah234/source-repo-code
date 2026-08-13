@@ -125,6 +125,12 @@ gh workflow run "Auto-merge Bot PRs" --repo hongyime/sourcerepo
 The `X:\01 REPOSITORIES` root has small `.bat` wrappers for local workspace
 maintenance. They call the tracked Python helpers in `tools/workspace/`.
 
+Install or refresh the root wrappers from this repo:
+
+```powershell
+pwsh -File .\tools\workspace\install_root_bats.ps1
+```
+
 - `02 RunSync.bat` → runs `tools/workspace/sync_workspace.py`; clones missing
   in-scope repos and fast-forwards clean local branches only.
 - `03 RunPush.bat` → runs `tools/workspace/push_workspace.py`; reports clean
