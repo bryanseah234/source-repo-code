@@ -199,7 +199,7 @@ def current_branch(repo_dir: Path, command_timeout: int) -> str | None:
 
 
 def count_revs(repo_dir: Path, revspec: str, command_timeout: int) -> int | None:
-    proc = run(["git", "rev-list", "--count", revspec], cwd=repo_dir, timeout=command_timeout)
+    proc = run(["git", "rev-list", "--count", revspec], cwd=repo_dir, timeout=max(command_timeout, 30))
     if proc.returncode != 0:
         return None
     try:
@@ -394,11 +394,11 @@ def main() -> int:
     print("No local repos are deleted by this tool.")
     print("-" * 72)
 
-    cloned = updated = skipped = 0
+    cloned = current = updated = review = skipped = failed = 0
     review_queue: list[tuple[str, Path, str]] = []
 
     def record_existing_result(full_name: str, repo_dir: Path, result: str) -> None:
-        nonlocal updated, skipped
+        nonlocal current, failed, review, skipped, updated
         display = result
         if args.interactive and result == "skip dirty":
             review_queue.append((full_name, repo_dir, "dirty working tree"))
@@ -409,6 +409,12 @@ def main() -> int:
 
         if result == "updated":
             updated += 1
+        elif result == "current":
+            current += 1
+        elif display.startswith("review "):
+            review += 1
+        elif "failed" in result:
+            failed += 1
         else:
             skipped += 1
         print(f"[{display.upper():18}] {full_name} -> {repo_dir}")
@@ -447,7 +453,7 @@ def main() -> int:
             cloned += 1
             print(f"[CLONED            ] {full_name} -> {target}")
         else:
-            skipped += 1
+            failed += 1
             print(f"[CLONE FAILED      ] {full_name}: {(clone.stderr or clone.stdout).strip()[:160]}")
 
     if args.interactive and review_queue and not args.dry_run:
@@ -471,7 +477,10 @@ def main() -> int:
                 print(f"[{result.upper():18}] {full_name} -> {repo_dir}")
 
     print("-" * 72)
-    print(f"Updated: {updated} | Cloned: {cloned} | Skipped: {skipped}")
+    print(
+        f"Current: {current} | Updated: {updated} | Cloned: {cloned} | "
+        f"Review: {review} | Skipped: {skipped} | Failed: {failed}"
+    )
     return 0
 
 
