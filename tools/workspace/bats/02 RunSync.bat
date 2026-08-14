@@ -21,7 +21,7 @@ if "%DRY_RUN%"=="1" goto RUN_SYNC
 
 echo Choose sync mode:
 echo   1. Safe sync     - update only clean repos that can fast-forward
-echo   2. Interactive   - ask what to do for dirty/diverged repos
+echo   2. Interactive   - do the safe sync first, then review dirty/diverged repos
 echo                    - can stash, merge, keep local, or keep GitHub per repo
 echo.
 echo Press Enter for option 1.

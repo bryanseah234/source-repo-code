@@ -68,9 +68,16 @@ def normalize_path(path: Path) -> Path:
     return Path(str(path).strip().strip('"')).resolve()
 
 
+_AUTHENTICATED_USER: str | None = None
+
+
 def authenticated_user() -> str:
+    global _AUTHENTICATED_USER
+    if _AUTHENTICATED_USER:
+        return _AUTHENTICATED_USER
     data = gh_json(["api", "user"])
-    return str(data["login"])
+    _AUTHENTICATED_USER = str(data["login"])
+    return _AUTHENTICATED_USER
 
 
 def paginated(endpoint: str) -> list[dict]:
@@ -123,13 +130,14 @@ def parse_full_name(remote_url: str) -> str | None:
 
 def local_repos(workspace: Path, command_timeout: int) -> dict[str, Path]:
     found: dict[str, Path] = {}
+    metadata_timeout = max(command_timeout, 30)
     candidates = [p for p in workspace.iterdir() if p.is_dir() and p.name not in EXCLUDED_DIRS]
     for first in candidates:
         repo_dirs = [first] if (first / ".git").exists() else []
         if not repo_dirs:
             repo_dirs.extend(p for p in first.iterdir() if p.is_dir() and (p / ".git").exists())
         for repo_dir in repo_dirs:
-            proc = run(["git", "remote", "get-url", "origin"], cwd=repo_dir, timeout=command_timeout)
+            proc = run(["git", "remote", "get-url", "origin"], cwd=repo_dir, timeout=metadata_timeout)
             if proc.returncode != 0:
                 continue
             full_name = parse_full_name(proc.stdout)
@@ -156,6 +164,25 @@ def selected(full_name: str, filters: set[str]) -> bool:
 def is_clean(repo_dir: Path, command_timeout: int) -> bool:
     proc = run(["git", "status", "--porcelain"], cwd=repo_dir, timeout=command_timeout)
     return proc.returncode == 0 and not proc.stdout.strip()
+
+
+def is_empty_dir(path: Path) -> bool:
+    try:
+        next(path.iterdir())
+    except StopIteration:
+        return True
+    except OSError:
+        return False
+    return False
+
+
+def existing_target_full_name(path: Path, command_timeout: int) -> str | None:
+    if not (path / ".git").exists():
+        return None
+    proc = run(["git", "remote", "get-url", "origin"], cwd=path, timeout=max(command_timeout, 30))
+    if proc.returncode != 0:
+        return None
+    return parse_full_name(proc.stdout)
 
 
 def has_tracked_changes(repo_dir: Path, command_timeout: int) -> bool:
@@ -368,19 +395,48 @@ def main() -> int:
     print("-" * 72)
 
     cloned = updated = skipped = 0
+    review_queue: list[tuple[str, Path, str]] = []
+
+    def record_existing_result(full_name: str, repo_dir: Path, result: str) -> None:
+        nonlocal updated, skipped
+        display = result
+        if args.interactive and result == "skip dirty":
+            review_queue.append((full_name, repo_dir, "dirty working tree"))
+            display = "review dirty"
+        elif args.interactive and result == "skip not fast-forward":
+            review_queue.append((full_name, repo_dir, "diverged branch"))
+            display = "review diverged"
+
+        if result == "updated":
+            updated += 1
+        else:
+            skipped += 1
+        print(f"[{display.upper():18}] {full_name} -> {repo_dir}")
+
     for repo in remotes:
         full_name = repo["full_name"]
         repo_dir = local.get(full_name)
         if repo_dir:
-            result = sync_existing(repo_dir, full_name, args.dry_run, args.command_timeout, args.interactive)
-            if result == "updated":
-                updated += 1
-            else:
-                skipped += 1
-            print(f"[{result.upper():18}] {full_name} -> {repo_dir}")
+            result = sync_existing(repo_dir, full_name, args.dry_run, args.command_timeout, False)
+            record_existing_result(full_name, repo_dir, result)
             continue
 
         target = clone_path(workspace, full_name)
+        if target.exists():
+            existing_full_name = existing_target_full_name(target, args.command_timeout)
+            if existing_full_name == full_name:
+                result = sync_existing(target, full_name, args.dry_run, args.command_timeout, False)
+                record_existing_result(full_name, target, result)
+                continue
+            if existing_full_name:
+                skipped += 1
+                print(f"[SKIP PATH CONFLICT] {full_name}: {target} is {existing_full_name}")
+                continue
+            if not is_empty_dir(target):
+                skipped += 1
+                print(f"[SKIP PATH EXISTS  ] {full_name}: {target} exists but is not this Git repo")
+                continue
+
         if args.dry_run:
             print(f"[WOULD CLONE        ] {full_name} -> {target}")
             skipped += 1
@@ -393,6 +449,26 @@ def main() -> int:
         else:
             skipped += 1
             print(f"[CLONE FAILED      ] {full_name}: {(clone.stderr or clone.stdout).strip()[:160]}")
+
+    if args.interactive and review_queue and not args.dry_run:
+        print("-" * 72)
+        print(f"Safe pass complete. Review queue: {len(review_queue)} dirty/diverged repo(s).")
+        print("You can skip any repo; destructive choices still require a second confirmation.")
+        choice = ask_choice(
+            "Review these now?",
+            [
+                ("review", "walk through the queued repos one by one"),
+                ("skip", "leave queued repos unchanged"),
+            ],
+            "review",
+        )
+        if choice == "review":
+            for index, (full_name, repo_dir, reason) in enumerate(review_queue, 1):
+                print("-" * 72)
+                print(f"{index}/{len(review_queue)} {full_name} -> {repo_dir}")
+                print(f"Reason: {reason}")
+                result = sync_existing(repo_dir, full_name, False, args.command_timeout, True)
+                print(f"[{result.upper():18}] {full_name} -> {repo_dir}")
 
     print("-" * 72)
     print(f"Updated: {updated} | Cloned: {cloned} | Skipped: {skipped}")
