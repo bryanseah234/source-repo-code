@@ -45,6 +45,7 @@ EXEMPT_DOTS=(
 )
 
 GITIGNORE_MARKER="# AI / editor dot directories (managed via sourcerepo)"
+GITIGNORE_END_MARKER="# End AI / editor dot directories (managed via sourcerepo)"
 
 retry() {
   local attempts=0
@@ -164,7 +165,22 @@ delete_code_workspace_files() {
 
 inject_gitignore_entries() {
   if grep -qF "$GITIGNORE_MARKER" .gitignore 2>/dev/null; then
-    return
+    local cleaned
+    cleaned="$(mktemp)"
+    if grep -qF "$GITIGNORE_END_MARKER" .gitignore 2>/dev/null; then
+      awk -v start="$GITIGNORE_MARKER" -v end="$GITIGNORE_END_MARKER" '
+        $0 == start { skip=1; next }
+        skip && $0 == end { skip=0; next }
+        !skip { print }
+      ' .gitignore > "$cleaned"
+    else
+      awk -v start="$GITIGNORE_MARKER" '
+        $0 == start { skip=1; next }
+        skip && $0 == "docs/" { skip=0; next }
+        !skip { print }
+      ' .gitignore > "$cleaned"
+    fi
+    mv "$cleaned" .gitignore
   fi
   cat >> .gitignore << 'GITIGNORE_BLOCK'
 
@@ -172,6 +188,11 @@ inject_gitignore_entries() {
 .*
 !.github/
 !.agents/
+.agents/*
+!.agents/STATE.md
+!.agents/JOURNAL.md
+!.agents/handoffs/
+!.agents/handoffs/**
 !.gitignore
 !.gitattributes
 !.gitmodules
@@ -197,6 +218,7 @@ inject_gitignore_entries() {
 skills/
 skills-lock.json
 docs/
+# End AI / editor dot directories (managed via sourcerepo)
 GITIGNORE_BLOCK
   echo "Updated .gitignore with dot directory exclusions"
 }
